@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-数据解析模块 - 负责读取和解析 map 文件和参考 piRNA 文件
+Data parsing module - responsible for reading and parsing map files and reference piRNA files.
 """
 
 import os
@@ -12,46 +12,46 @@ from Bio import SeqIO
 
 def parse_map_file_optimized(map_file, ref_pirna_file, chunk_size=10000):
     """
-    优化版本的parse_map_file函数，使用分块处理和更高效的数据结构
+    Optimized version of parse_map_file using chunked processing and efficient data structures.
     
-    参数:
-        map_file: map文件路径
-        ref_pirna_file: 参考piRNA文件路径
-        chunk_size: 每次处理的行数
+    Args:
+        map_file: path to map file
+        ref_pirna_file: path to reference piRNA FASTA
+        chunk_size: number of rows per chunk to process
     
-    返回:
+    Returns:
         read_info, read_to_pirna_count, read_to_pirnas, filter_stats
     """
-    # 存储每条读取序列比对到的参考piRNA数量
+    # Store number of reference piRNAs each read maps to
     read_to_pirna_count = defaultdict(int)
-    # 存储每条读取序列的计数和长度
+    # Store count and length per read sequence
     read_info = {}
-    # 存储每条读取序列比对到的参考piRNA及位置
+    # Store mapped reference piRNAs and positions per read sequence
     read_to_pirnas = defaultdict(list)
     
-    # 记录过滤的序列数量
+    # Track filtered sequences
     filtered_count = 0
     total_count = 0
     
-    # 计时
+    # Timing
     start_time = time.time()
     
-    print(f"开始解析参考piRNA文件: {ref_pirna_file}")
-    # 从参考piRNA文件中读取序列
+    print(f"Start parsing reference piRNA file: {ref_pirna_file}")
+    # Read sequences from reference piRNA file
     pirna_sequences = {}
     try:
-        # 使用迭代器模式减少内存使用
+        # Use iterator mode to reduce memory usage
         for record in SeqIO.parse(ref_pirna_file, "fasta"):
             pirna_sequences[record.id] = str(record.seq)
-        print(f"成功读取了 {len(pirna_sequences)} 条参考piRNA序列，耗时 {time.time() - start_time:.2f} 秒")
+        print(f"Loaded {len(pirna_sequences)} reference piRNA sequences in {time.time() - start_time:.2f} s")
     except Exception as e:
-        print(f"警告: 读取参考piRNA文件时出错: {e}")
-        print("将使用target_seq作为替代")
+        print(f"Warning: failed to read reference piRNA file: {e}")
+        print("Will use target_seq as a fallback")
     
-    # 查找对应的.fa.collapsed文件以获取序列计数信息
+    # Find corresponding .fa.collapsed file to get sequence counts
     collapsed_file = map_file.replace('.map', '')
     if not os.path.exists(collapsed_file):
-        # 尝试其他可能的文件名模式
+        # Try alternative filename patterns
         possible_collapsed_files = [
             map_file.replace('.fa.rmdup.map', '.fa.collapsed'),
             map_file.replace('.map', '.fa.collapsed'),
@@ -61,24 +61,23 @@ def parse_map_file_optimized(map_file, ref_pirna_file, chunk_size=10000):
         for possible_file in possible_collapsed_files:
             if os.path.exists(possible_file):
                 collapsed_file = possible_file
-                print(f"找到collapsed文件: {collapsed_file}")
+                print(f"Found collapsed file: {collapsed_file}")
                 break
     
-    # 使用Biopython从collapsed文件中读取序列计数信息和序列本身
+    # Read sequence counts and sequences from collapsed FASTA via Biopython
     seq_counts = {}
     read_sequences = {}
     if os.path.exists(collapsed_file):
         collapsed_start_time = time.time()
-        print(f"解析collapsed文件: {collapsed_file}")
+        print(f"Parsing collapsed file: {collapsed_file}")
         try:
-            # 使用进度条显示处理进度
+            # Count lines to initialize progress bar
             with open(collapsed_file, 'r') as f:
-                # 计算文件行数以设置进度条
                 line_count = sum(1 for _ in f)
             
             record_count = 0
-            for record in tqdm(SeqIO.parse(collapsed_file, "fasta"), total=line_count//2, desc="读取序列"):
-                # 从FASTA头部提取计数信息
+            for record in tqdm(SeqIO.parse(collapsed_file, "fasta"), total=line_count//2, desc="Reading sequences"):
+                # Extract count from FASTA header
                 count = 1
                 if '-' in record.id:
                     try:
@@ -86,75 +85,75 @@ def parse_map_file_optimized(map_file, ref_pirna_file, chunk_size=10000):
                     except ValueError:
                         pass
                 
-                # 存储序列及其计数
+                # Store sequence and its count
                 seq = str(record.seq)
                 seq_counts[seq] = count
                 
-                # 同时存储序列ID和序列的映射关系
+                # Map read ID to sequence string
                 read_sequences[record.id] = seq
                 record_count += 1
             
-            print(f"成功读取了 {len(seq_counts)} 条序列及其计数信息，耗时 {time.time() - collapsed_start_time:.2f} 秒")
-            print(f"成功存储了 {len(read_sequences)} 条序列ID与序列的映射关系")
+            print(f"Loaded {len(seq_counts)} sequences with counts in {time.time() - collapsed_start_time:.2f} s")
+            print(f"Stored {len(read_sequences)} read ID to sequence mappings")
         except Exception as e:
-            print(f"警告: 解析collapsed文件时出错: {e}")
+            print(f"Warning: failed to parse collapsed file: {e}")
     else:
-        print(f"警告: 找不到对应的collapsed文件: {collapsed_file}")
+        print(f"Warning: collapsed file not found: {collapsed_file}")
     
-    # 读取map文件
+    # Read map file
     map_start_time = time.time()
-    print(f"开始解析map文件: {map_file}")
+    print(f"Start parsing map file: {map_file}")
     try:
-        # 使用pandas分块读取TSV格式的map文件，减少内存使用
-        # 首先获取列名
+        # Read TSV map file in chunks with pandas to reduce memory usage
+        # First, get column count
         header = pd.read_csv(map_file, sep='\t', nrows=1, header=None)
         column_count = len(header.columns)
         
-        # 设置列名
+        # Set column names
         column_names = ['piRNA_id', 'trans_coord', 'reads_id']
         
-        # 计算文件行数以设置进度条
+        # Count lines to configure progress bar
         with open(map_file, 'r') as f:
-            line_count = sum(1 for _ in f) - 1  # 减去标题行
+            line_count = sum(1 for _ in f) - 1  # minus header line
         
-        # 分块读取并处理
+        # Read and process by chunks
         reader = pd.read_csv(map_file, sep='\t', skiprows=1, header=None, names=column_names, chunksize=chunk_size)
         
-        # 使用进度条显示处理进度
-        with tqdm(total=line_count, desc="处理map文件") as pbar:
+        # Progress bar
+        with tqdm(total=line_count, desc="Processing map file") as pbar:
             for chunk in reader:
                 chunk_size = len(chunk)
                 total_count += chunk_size
                 pbar.update(chunk_size)
                 
-                # 处理每一行
+                # Process each row
                 for _, row in chunk.iterrows():
-                    piRNA_id = row['piRNA_id']  # 参考piRNA ID
-                    trans_coord = int(row['trans_coord'])  # 偏移位置
-                    reads_id = row['reads_id']  # 读取序列ID
+                    piRNA_id = row['piRNA_id']  # reference piRNA ID
+                    trans_coord = int(row['trans_coord'])  # offset position
+                    reads_id = row['reads_id']  # read sequence ID
                     
-                    # 获取读取序列和计数
+                    # Fetch read sequence and its count
                     read_seq = read_sequences.get(reads_id, "")
                     if not read_seq:
-                        # 如果读取序列为空，则跳过该条记录
+                        # Skip if read sequence not found
                         continue
                     count = seq_counts.get(read_seq, 1)
                     
-                    # 存储读取序列信息
+                    # Store read info
                     read_key = read_seq
                     read_info[read_key] = (count, len(read_seq))
                     
-                    # 更新读取序列比对到的参考piRNA数量
+                    # Update number of mapped reference piRNAs for this read
                     read_to_pirna_count[read_key] += 1
                     
-                    # 存储读取序列比对到的参考piRNA及位置
+                    # Append mapped reference piRNA and position
                     read_to_pirnas[read_key].append((piRNA_id, trans_coord))
         
-        print(f"成功解析了 {total_count} 条比对记录，耗时 {time.time() - map_start_time:.2f} 秒")
-        print(f"过滤了 {filtered_count} 条起始位置>6的序列")
+        print(f"Parsed {total_count} alignment records in {time.time() - map_start_time:.2f} s")
+        print(f"Filtered {filtered_count} sequences with start position > 6")
     except Exception as e:
-        print(f"警告: 解析map文件时出错: {e}")
+        print(f"Warning: failed to parse map file: {e}")
     
-    # 返回解析结果和过滤统计
+    # Return parsed results and filter statistics
     filter_stats = (total_count, filtered_count)
     return read_info, read_to_pirna_count, read_to_pirnas, filter_stats
