@@ -1,34 +1,34 @@
 #!/usr/bin/env Rscript
 # -*- coding: utf-8 -*-
 #
-# 通用散点图比较工具
-# 用于绘制两个样本之间的散点图比较，支持多种自定义选项
+# General scatterplot comparison tool
+# Plot pairwise comparisons between two samples with customizable options
 #
-# 使用方法:
-# Rscript plot_scatter_comparison.R [参数]
+# Usage:
+# Rscript plot_scatter_comparison.R [options]
 #
-# 参数:
-#   --input_dir=<目录>       输入CSV文件所在目录
-#   --output_dir=<目录>      输出PDF文件保存目录
-#   --pattern=<模式>         用于筛选CSV文件的模式，默认为"_pirna_trim.csv"
-#   --id_column=<列名>       用于合并数据的ID列名，默认为"piRNA_ID"
-#   --value_column=<列名>    用于比较的数值列名，默认为"Trim_index"
-#   --log_scale=<TRUE/FALSE> 是否使用对数坐标轴，默认为TRUE
-#   --point_size=<数值>      点的大小，默认为1
-#   --point_alpha=<数值>     点的透明度，默认为0.7
-#   --width=<数值>           输出PDF的宽度(英寸)，默认为7
-#   --height=<数值>          输出PDF的高度(英寸)，默认为7
-#   --help                   显示帮助信息
+# Options:
+#   --input_dir=<dir>        Directory containing input CSV files
+#   --output_dir=<dir>       Directory to save output PDF files
+#   --pattern=<pattern>      Pattern for selecting CSV files [default: "_pirna_trim.csv"]
+#   --id_column=<name>       ID column for merging [default: "piRNA_ID"]
+#   --value_column=<name>    Numeric column to compare [default: "Trim_index"]
+#   --log_scale=<TRUE/FALSE> Whether to use log axes [default: TRUE]
+#   --point_size=<num>       Point size [default: 1]
+#   --point_alpha=<num>      Point transparency [default: 0.7]
+#   --width=<num>            PDF width (inches) [default: 7]
+#   --height=<num>           PDF height (inches) [default: 7]
+#   --help                   Show help
 
-# 检查并安装缺失的包
+# Check and install missing packages
 packages <- c("ggplot2", "dplyr", "tidyr", "readr", "optparse", "scales", "viridis")
 missing_packages <- packages[!packages %in% installed.packages()[,"Package"]]
 if(length(missing_packages) > 0) {
-  message(paste0("正在安装缺失的包: ", paste(missing_packages, collapse=", ")))
+  message(paste0("Installing missing packages: ", paste(missing_packages, collapse=", ")))
   install.packages(missing_packages, repos="https://cloud.r-project.org")
 }
 
-# 加载必要的库
+# Load required packages
 suppressPackageStartupMessages({
   library(ggplot2)
   library(dplyr)
@@ -39,49 +39,49 @@ suppressPackageStartupMessages({
   library(viridis)
 })
 
-# 定义命令行参数
+# Define CLI options
 option_list <- list(
   make_option("--input_dir", type="character", default=NULL,
-              help="输入CSV文件所在目录"),
+              help="Directory containing input CSV files"),
   make_option("--output_dir", type="character", default=NULL,
-              help="输出PDF文件保存目录"),
+              help="Directory to save output PDF files"),
   make_option("--pattern", type="character", default="_pirna_trim.csv",
-              help="用于筛选CSV文件的模式 [默认: %default]"),
+              help="Filename pattern to select CSV files [default: %default]"),
   make_option("--id_column", type="character", default="piRNA_ID",
-              help="用于合并数据的ID列名 [默认: %default]"),
+              help="ID column to merge on [default: %default]"),
   make_option("--value_column", type="character", default="Trim_index",
-              help="用于比较的数值列名 [默认: %default]"),
+              help="Numeric column to compare [default: %default]"),
   make_option("--log_scale", type="logical", default=TRUE,
-              help="是否使用对数坐标轴 [默认: %default]"),
+              help="Use log axes [default: %default]"),
   make_option("--point_size", type="double", default=1,
-              help="点的大小 [默认: %default]"),
+              help="Point size [default: %default]"),
   make_option("--point_alpha", type="double", default=0.7,
-              help="点的透明度 [默认: %default]"),
+              help="Point transparency [default: %default]"),
   make_option("--width", type="double", default=7,
-              help="输出PDF的宽度(英寸) [默认: %default]"),
+              help="Output PDF width (inches) [default: %default]"),
   make_option("--height", type="double", default=7,
-              help="输出PDF的高度(英寸) [默认: %default]"),
-  make_option("--sample_config", type="character", default=NULL, 
-              help="样本配置文件路径，包含样本名称和类型信息")
+              help="Output PDF height (inches) [default: %default]"),
+  make_option("--sample_config", type="character", default=NULL,
+              help="Path to sample config (sample name and type)")
 )
 
-# 解析命令行参数
+# Parse CLI options
 opt_parser <- OptionParser(option_list=option_list,
-                          description="通用散点图比较工具 - 用于绘制两个样本之间的散点图比较")
+                          description="General scatterplot comparison tool for two samples")
 opt <- parse_args(opt_parser)
 
-# 检查必要的参数
+# Check required arguments
 if (is.null(opt$input_dir) || is.null(opt$output_dir)) {
   print_help(opt_parser)
-  stop("必须指定输入和输出目录", call.=FALSE)
+  stop("Must specify both input_dir and output_dir", call.=FALSE)
 }
 
-# 创建输出目录
+# Create output directory
 dir.create(opt$output_dir, showWarnings = FALSE, recursive = TRUE)
 
-# 简化样本名称的函数
+# Simplify sample names
 simplify_sample_name <- function(sample_name) {
-  # 去除常见的后缀
+  # Remove common suffixes
   suffixes <- c(".map", ".fa.rmdup.map", ".fa.collapsed.map", ".fa.collapsed.no-dust.map",
                 ".collapsed.no-dust.map", ".no-dust.map", ".fa.collapsed.no-dust",
                 ".collapsed.no-dust", ".no-dust", ".fa")
@@ -93,13 +93,13 @@ simplify_sample_name <- function(sample_name) {
     }
   }
 
-  # 移除测序相关的后缀
+  # Remove sequencing-related suffixes
   patterns <- c("_1.fq", "_2.fq", ".fq", "_1.fastq", "_2.fastq", ".fastq")
   for (pattern in patterns) {
     sample_name <- gsub(pattern, "", sample_name)
   }
 
-  # 如果样本名称包含"-KD"，只保留该部分
+  # If sample name contains "-KD", keep only that part
   if (grepl("-KD", sample_name)) {
     parts <- strsplit(sample_name, "-KD")[[1]]
     if (length(parts) > 1) {
@@ -111,16 +111,16 @@ simplify_sample_name <- function(sample_name) {
   return(sample_name)
 }
 
-# 获取输入文件列表
+# List input files
 input_files <- list.files(path = opt$input_dir, pattern = opt$pattern, full.names = TRUE)
 if (length(input_files) < 2) {
-  stop("至少需要2个样本才能进行比较分析", call.=FALSE)
+  stop("At least two samples are required for comparison", call.=FALSE)
 }
 
-# 读取样本配置文件
+# Read sample config
 sample_info <- list()
 if (!is.null(opt$sample_config) && file.exists(opt$sample_config)) {
-  message(paste("读取样本配置文件:", opt$sample_config))
+  message(paste("Reading sample config:", opt$sample_config))
   config_lines <- readLines(opt$sample_config)
   for (line in config_lines) {
     if (line != "") {
@@ -129,92 +129,90 @@ if (!is.null(opt$sample_config) && file.exists(opt$sample_config)) {
         sample_name <- parts[1]
         sample_type <- parts[2]
         sample_info[[sample_name]] <- sample_type
-        message(paste("  样本:", sample_name, ", 类型:", sample_type))
+        message(paste("  Sample:", sample_name, ", Type:", sample_type))
       }
     }
   }
-  message(paste("样本配置文件中包含", length(sample_info), "个样本"))
+  message(paste("Sample config contains", length(sample_info), "samples"))
 }
 
-# 读取所有样本数据
+# Read all sample data
 all_data <- list()
 for (file in input_files) {
-  # 从文件名中提取样本名
+  # Extract sample name from filename
   file_name <- basename(file)
   sample_name <- gsub(opt$pattern, "", file_name)
 
-  # 简化样本名称
+  # Simplify sample name
   simple_name <- simplify_sample_name(sample_name)
 
-  # 读取CSV文件
-  message(paste("读取文件:", file_name))
+  # Read CSV
+  message(paste("Reading file:", file_name))
   df <- read_csv(file, show_col_types = FALSE)
 
-  # 检查必要的列是否存在
+  # Check mandatory columns
   if (!opt$id_column %in% colnames(df) || !opt$value_column %in% colnames(df)) {
-    warning(paste("文件", file_name, "缺少必要的列，跳过"))
+    warning(paste("File", file_name, "missing required columns; skipped"))
     next
   }
 
-  # 存储数据
+  # Store data
   all_data[[simple_name]] <- df
-  message(paste("  行数:", nrow(df)))
-  message(paste("  列名:", paste(colnames(df), collapse=", ")))
+  message(paste("  Rows:", nrow(df)))
+  message(paste("  Columns:", paste(colnames(df), collapse=", ")))
 }
 
-message(paste("\n总共找到", length(all_data), "个样本"))
+message(paste("\nTotal samples:", length(all_data)))
 
-# 绘制每对样本的比较图
-message("\
-开始绘制样本比较图...")
+# Plot pairwise comparisons
+message("\nStart plotting sample comparisons...")
 sample_names <- names(all_data)
 n_samples <- length(sample_names)
 
-# 定义一个函数来获取样本类型
+# Helper: get sample type
 get_sample_type <- function(sample_name) {
-  # 首先尝试直接匹配
+  # Try exact match first
   if (sample_name %in% names(sample_info)) {
     return(sample_info[[sample_name]])
   }
 
-  # 如果没有直接匹配，尝试部分匹配
+  # Else try partial match
   for (name in names(sample_info)) {
     if (grepl(name, sample_name, fixed = TRUE) || grepl(sample_name, name, fixed = TRUE)) {
       return(sample_info[[name]])
     }
   }
 
-  # 如果没有匹配，返回默认值
+  # Fallback
   return("unknown")
 }
 
-# 定义一个函数来决定样本的顺序
-# 对照组应该在x轴，处理组应该在y轴
+# Decide sample order: control on x-axis, treatment on y-axis
 should_swap_samples <- function(sample1, sample2) {
   type1 <- get_sample_type(sample1)
   type2 <- get_sample_type(sample2)
 
-  # 如果第一个样本是处理组，第二个是对照组，则交换
+  # Swap if first is treatment and second is control
   if (type1 == "treatment" && type2 == "untreatment") {
     return(TRUE)
   }
 
-  # 否则不交换
+  # Otherwise keep order
   return(FALSE)
 }
 
-# 定义一个函数来检查是否是对照组和处理组的比较
+# Check whether the pair is control vs treatment
 is_control_vs_treatment <- function(sample1, sample2) {
   type1 <- get_sample_type(sample1)
   type2 <- get_sample_type(sample2)
 
-  # 如果一个是对照组，一个是处理组，则返回TRUE
+  # TRUE when one is control and the other is treatment
   if ((type1 == "untreatment" && type2 == "treatment") ||
       (type1 == "treatment" && type2 == "untreatment")) {
     return(TRUE)
   }
 
-  # 否则返回FALSE
+  # Otherwise FALSE
   return(FALSE)
 }
 
@@ -223,30 +221,30 @@ for (i in 1:(n_samples-1)) {
     sample1_name <- sample_names[i]
     sample2_name <- sample_names[j]
 
-    # 检查是否是对照组和处理组的比较
+    # Ensure it's a control vs treatment comparison
     if (!is_control_vs_treatment(sample1_name, sample2_name)) {
-      message(paste("  跳过:", sample1_name, "vs", sample2_name, "(非对照组与处理组的比较)"))
+      message(paste("  Skipped:", sample1_name, "vs", sample2_name, "(not control vs treatment)"))
       next
     }
 
-    # 检查是否需要交换样本顺序
+    # Swap order if needed
     if (should_swap_samples(sample1_name, sample2_name)) {
       temp <- sample1_name
       sample1_name <- sample2_name
       sample2_name <- temp
     }
 
-    message(paste("  绘制:", sample1_name, "vs", sample2_name))
+    message(paste("  Plot:", sample1_name, "vs", sample2_name))
 
-    # 获取样本类型
+    # Sample types
     type1 <- get_sample_type(sample1_name)
     type2 <- get_sample_type(sample2_name)
 
-    # 获取两个样本的数据
+    # Fetch data
     df1 <- all_data[[sample1_name]]
     df2 <- all_data[[sample2_name]]
 
-    # 合并两个样本的数据
+    # Merge data
     merged_df <- df1 %>%
       select(!!sym(opt$id_column), !!sym(opt$value_column)) %>%
       inner_join(
@@ -255,15 +253,15 @@ for (i in 1:(n_samples-1)) {
         suffix = c("_1", "_2")
       )
 
-    # 计算fold change
+    # Compute fold change
     merged_df <- merged_df %>%
       mutate(fold_change = .data[[paste0(opt$value_column, "_2")]] / (.data[[paste0(opt$value_column, "_1")]] + 1e-10))
 
-    # 计算fold change的范围，用于颜色映射
+    # Determine fold change range for color mapping
     fc_min <- min(merged_df$fold_change)
     fc_max <- max(merged_df$fold_change)
 
-    # 确保范围是对称的（相对于1）
+    # Ensure symmetry around 1
     if (fc_min < 1 && 1/fc_min > fc_max) {
       vmax <- 1/fc_min
       vmin <- fc_min
@@ -272,11 +270,10 @@ for (i in 1:(n_samples-1)) {
       vmin <- 1/fc_max
     }
 
-    # 不再限制颜色映射范围
-    # 记录fold change的范围供参考
-    message(paste("    Fold change范围:", round(fc_min, 2), "-", round(fc_max, 2)))
+    # Log fold change range for reference
+    message(paste("    Fold change range:", round(fc_min, 2), "-", round(fc_max, 2)))
 
-    # 创建颜色映射函数 - 深蓝黄深红配色
+    # Color scale: dark blue - yellow - dark red
     color_scale <- scale_color_gradient2(
       low = "darkblue",
       mid = "yellow",
@@ -286,20 +283,20 @@ for (i in 1:(n_samples-1)) {
       name = "Fold change"
     )
 
-    # 获取数据范围
+    # Data range
     min_val <- min(c(merged_df[[paste0(opt$value_column, "_1")]], merged_df[[paste0(opt$value_column, "_2")]]))
     max_val <- max(c(merged_df[[paste0(opt$value_column, "_1")]], merged_df[[paste0(opt$value_column, "_2")]]))
 
-    # 确保最小值为正数，用于对数坐标轴
+    # Ensure positive min for log axes
     min_val <- max(min_val, 1e-10)
 
-    # 创建散点图
+    # Build scatter plot
     p <- ggplot(merged_df, aes(
       x = .data[[paste0(opt$value_column, "_1")]],
       y = .data[[paste0(opt$value_column, "_2")]],
       color = fold_change
     )) +
-      geom_point(size = opt$point_size, alpha = 0.4) + # 调整点的透明度为0.4
+      geom_point(size = opt$point_size, alpha = 0.4) + # point alpha = 0.4
       geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray50") +
       color_scale +
       labs(
@@ -316,16 +313,16 @@ for (i in 1:(n_samples-1)) {
         axis.text = element_text(size = 10)
       )
 
-    # 根据需要设置对数坐标轴
+    # Apply log axes if requested
     if (opt$log_scale) {
       p <- p +
         scale_x_log10(
           limits = c(min_val, max_val * 1.1),
-          labels = function(x) format(x, scientific = FALSE, digits = 1) # 使用正确的对数刻度格式
+          labels = function(x) format(x, scientific = FALSE, digits = 1)
         ) +
         scale_y_log10(
           limits = c(min_val, max_val * 1.1),
-          labels = function(x) format(x, scientific = FALSE, digits = 1) # 使用正确的对数刻度格式
+          labels = function(x) format(x, scientific = FALSE, digits = 1) # Using the correct logarithmic scale format.
         )
     } else {
       p <- p +
@@ -333,13 +330,13 @@ for (i in 1:(n_samples-1)) {
         scale_y_continuous(limits = c(0, max_val * 1.1))
     }
 
-    # 不再添加样本类型的注释
+    # No sample-type annotations
 
-    # 保存图表
+    # Save figure
     output_file <- file.path(opt$output_dir, paste0(sample1_name, "_vs_", sample2_name, ".pdf"))
     ggsave(output_file, plot = p, width = opt$width, height = opt$height)
-    message(paste("    已保存到:", output_file))
+    message(paste("    Saved:", output_file))
   }
 }
 
-message(paste("\n绘图完成，结果保存在:", opt$output_dir))
+message(paste("\nDone. Output saved to:", opt$output_dir))

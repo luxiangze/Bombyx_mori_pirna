@@ -1,5 +1,5 @@
-# piRNA数据分析
+# piRNA Data Analysis
 
-此仓库主要用于存放piRNA分析过程中的相关脚本。
+This repository contains scripts used throughout the piRNA analysis workflow.
 
-## 文件夹解释
+## Directory Structure
