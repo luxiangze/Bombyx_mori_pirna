@@ -28,216 +28,216 @@ python3 replot_from_csv.py -i /path/to/csv_files -o /path/to/replotted_figures
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/figures
 ```
 
-## 主要脚本
+## Main Scripts
 
-### 数据处理脚本
+### Data Processing Scripts
 
 #### `process_pirna.sh`
 
-**功能**：自动处理 piRNA 数据的主脚本，包括数据预处理、比对和分析。
+**Purpose**: Main driver to process piRNA data end-to-end, including preprocessing, mapping, and analysis.
 
-**用法**：
+**Usage**:
 ```bash
-./process_pirna.sh <输入目录> <输出目录> [并行任务数] [参考基因组路径] [日志目录] [--skip-existing]
+./process_pirna.sh <input_dir> <output_dir> [num_parallel] [reference_genome_path] [log_dir] [--skip-existing]
 ```
 
-**参数说明**：
-- `<输入目录>`：包含原始 fastq 文件的目录
-- `<输出目录>`：处理结果的输出目录
-- `[并行任务数]`：可选，同时处理的文件数量，默认为 4
-- `[参考基因组路径]`：可选，piRNA 参考基因组文件路径
-- `[日志目录]`：可选，日志文件保存目录
-- `[--skip-existing]`：可选，如果结果文件已存在则跳过处理
+**Parameters**:
+- `<input_dir>`: Directory containing raw FASTQ files
+- `<output_dir>`: Output directory for processed results
+- `[num_parallel]`: Optional, number of files to process in parallel (default: 4)
+- `[reference_genome_path]`: Optional, path to piRNA reference genome file
+- `[log_dir]`: Optional, directory to store logs
+- `[--skip-existing]`: Optional, skip processing if results already exist
 
 #### `process_fastq_with_fastp.sh`
 
-**功能**：使用 fastp 工具处理 fastq 文件，进行质量控制和过滤。
+**Purpose**: Process FASTQ files with fastp for quality control and filtering.
 
-**用法**：
+**Usage**:
 ```bash
-./process_fastq_with_fastp.sh <输入文件> <输出目录>
+./process_fastq_with_fastp.sh <input_path> <output_dir>
 ```
 
-### piRNA 分析模块
+### piRNA Analysis Package
 
-#### `pirna_analysis` 包
+#### `pirna_analysis` package
 
-这是一个模块化的 Python 包，用于分析 piRNA 的长度分布、5'端位移分布和3'端相对位置分布。包含以下模块：
+This is a modular Python package for analyzing piRNA length distributions, 5' end shift distributions, and 3' end relative position distributions. It includes:
 
-- `data_parser.py`：负责解析 map 文件和参考 piRNA 文件
-- `data_analyzer.py`：负责数据分析功能
-- `visualization.py`：负责绘图功能
-- `utils.py`：提供辅助功能
-- `main.py`：主程序入口和流程控制
+- `data_parser.py`: Parse map files and reference piRNA files
+- `data_analyzer.py`: Analysis functions
+- `visualization.py`: Plotting functions
+- `utils.py`: Helper utilities
+- `main.py`: CLI entry point and orchestration
 
 #### `analyze_pirna.py`
 
-**功能**：piRNA 分析的入口脚本，调用 pirna_analysis 包进行分析。
+**Purpose**: Entry-point script for piRNA analysis that calls the `pirna_analysis` package.
 
-**用法**：
+**Usage**:
 ```bash
-python3 analyze_pirna.py -i <map_file1> [<map_file2> ...] -o <output_directory> [其他参数]
+python3 analyze_pirna.py -i <map_file1> [<map_file2> ...] -o <output_directory> [other options]
 ```
 
-**参数说明**：
-- `-i, --input`：输入的 map 文件路径，可以指定多个文件
-- `-o, --output`：输出目录
-- `-v, --verbose`：显示详细处理信息
-- `-p, --prefix`：输出文件的前缀
-- `-r, --ref`：参考 piRNA 文件路径
-- `--threads`：并行处理的线程数
+**Options**:
+- `-i, --input`: One or more input .map files
+- `-o, --output`: Output directory
+- `-v, --verbose`: Verbose processing logs
+- `-p, --prefix`: Output filename prefix
+- `-r, --ref`: Reference piRNA file path
+- `--threads`: Number of threads for parallel processing
 
 #### `replot_from_csv.py`
 
-**功能**：从已生成的CSV文件重新绘制piRNA分析图表，避免重新解析map文件。
+**Purpose**: Replot piRNA analysis figures from previously generated CSV files to avoid re-parsing map files.
 
-**特点**：
-1. 自动查找指定目录中的所有CSV结果文件
-2. 支持绘制四种图表：长度分布、5'端位移分布、3'端相对位置分布和唯一读数长度分布
-3. 确保所有图表的横坐标都显示为整数
-4. 可以指定输出目录和文件前缀
+**Features**:
+1. Auto-detect all CSV result files in the specified directory
+2. Supports four plots: length distribution, 5' end shift distribution, 3' end relative position distribution, and unique read length distribution
+3. Ensures integer x-axis tick marks for all plots
+4. Supports custom output directory and file prefix
 
-**用法**：
+**Usage**:
 ```bash
-python3 replot_from_csv.py -i <CSV文件目录> -o <输出目录> [-p <输出文件前缀>]
+python3 replot_from_csv.py -i <csv_dir> -o <output_dir> [-p <output_prefix>]
 ```
 
-**参数说明**：
-- `-i, --input`：包含CSV文件的输入目录
-- `-o, --output`：输出目录
-- `-p, --prefix`：可选，输出文件前缀
+**Options**:
+- `-i, --input`: Input directory containing CSV files
+- `-o, --output`: Output directory
+- `-p, --prefix`: Optional output file prefix
 
-#### `analyze_pirna_distribution.py`（已拆分为模块）
+#### `analyze_pirna_distribution.py` (deprecated, modularized)
 
-**功能**：分析 piRNA 的长度分布、5'端位移分布和3'端相对位置分布。
+**Purpose**: Analyze piRNA length distribution, 5' end shift distribution, and 3' end relative position distribution.
 
-**注意**：此脚本已被拆分为 `pirna_analysis` 包，建议使用 `analyze_pirna.py` 或直接调用 `pirna_analysis.main` 模块。
+**Note**: This script has been split into the `pirna_analysis` package. Use `analyze_pirna.py` or call `pirna_analysis.main` directly.
 
-### 批处理脚本
+### Batch Scripts
 
 #### `batch_analyze_pirna.sh`
 
-**功能**：批量分析指定目录中的所有 map 文件，自动分配 CPU 资源。
+**Purpose**: Batch-analyze all .map files in the specified directory with automatic CPU resource allocation.
 
-**特点**：
-1. 自动查找指定目录中的所有 .map 文件
-2. 允许指定控制组文件（默认为 Control.fa.collapsed.no-dust.map）
-3. 自动计算并合理分配 CPU 资源（使用服务器 90% 的 CPU）
-4. 同时分析 32nt 和 28nt 的未处理序列
-5. 生成带时间戳的日志文件
-6. 提供详细的运行信息和错误处理
+**Features**:
+1. Auto-discover all .map files under the given directory
+2. Optional control file (default: Control.fa.collapsed.no-dust.map)
+3. Dynamic CPU allocation targeting ~90% of server CPU usage
+4. Analyze unprocessed sequences for both 32 nt and 28 nt
+5. Timestamped log files
+6. Detailed run information and error handling
 
-### 序列分析脚本
+### Sequence Analysis Scripts
 
 #### `identify_unprocessed_sequences.py`
 
-**功能**：识别未从 32nt 处理到 28nt 的序列以及未从 28nt 处理到其他长度的序列。
+**Purpose**: Identify sequences not processed from 32 nt to 28 nt, and sequences not further processed from 28 nt to other lengths.
 
-**特点**：
-1. 专注于一对样本的分析
-2. 允许用户自定义样本名称
-3. 优化的输出结构
+**Highlights**:
+1. Focuses on a single control/treatment pair per run
+2. Customizable sample names
+3. Simplified output structure
 
-**用法**：
+**Usage**:
 ```bash
-python3 identify_unprocessed_sequences.py <对照组文件> <实验组文件> -o <输出目录> [其他参数]
+python3 identify_unprocessed_sequences.py <control.map> <treatment.map> -o <output_dir> [options]
 ```
 
 #### `plot_length_distribution.py`
 
-**功能**：绘制 piRNA 长度分布图。
+**Purpose**: Plot piRNA length distribution.
 
-### 辅助脚本
+### Utility Scripts
 
 #### `count_length.sh`
 
-**功能**：统计序列长度分布。
+**Purpose**: Count sequence length distribution.
 
 #### `rename.sh`
 
-**功能**：批量重命名文件。
+**Purpose**: Batch-rename files.
 
-#### `piPipes_run.sh` 和 `tailor_run.sh`
+#### `piPipes_run.sh` and `tailor_run.sh`
 
-**功能**：调用 piPipes 和 Tailor 工具进行 piRNA 分析的脚本。
+**Purpose**: Invoke piPipes and Tailor tools for piRNA analysis.
 
-## 使用示例
+## Examples
 
-### 基本处理流程
+### Basic Processing Workflow
 
-1. 使用 `process_pirna.sh` 处理原始数据：
+1. Process raw data with `process_pirna.sh`:
    ```bash
    ./process_pirna.sh /path/to/fastq_files /path/to/output 8
    ```
 
-2. 使用 `analyze_pirna.py` 分析处理后的数据：
+2. Analyze processed data with `analyze_pirna.py`:
    ```bash
    python3 analyze_pirna.py -i /path/to/output/*.map -o /path/to/results -v
    ```
 
-3. 使用 `identify_unprocessed_sequences.py` 识别未处理序列：
+3. Identify unprocessed sequences with `identify_unprocessed_sequences.py`:
    ```bash
    python3 identify_unprocessed_sequences.py /path/to/control.map /path/to/treatment.map -o /path/to/results
    ```
 
-4. 使用 `replot_from_csv.py` 从已生成的CSV文件重新绘制图表：
+4. Replot figures from existing CSV files with `replot_from_csv.py`:
    ```bash
    python3 replot_from_csv.py -i /path/to/csv_files -o /path/to/replotted_figures -p "replotted_"
    ```
 
-5. 使用 `plot_scatter_comparison.R` 绘制样本间的散点图比较：
+5. Plot sample comparisons with `plot_scatter_comparison.R`:
    ```bash
    Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/output
    ```
 
-### 批量处理
+### Batch Processing
 
-使用 `batch_analyze_pirna.sh` 批量分析多个样本：
+Use `batch_analyze_pirna.sh` to analyze multiple samples in batch:
 ```bash
 ./batch_analyze_pirna.sh /path/to/map_files /path/to/output Control.map
 ```
 
-### 数据可视化
+### Data Visualization
 
 #### `plot_scatter_comparison.R`
 
-**功能**：通用散点图比较工具，用于绘制两个样本之间的散点图比较，特别适合piRNA剪切数据的比较。使用ggplot2绘制高质量的散点图，支持多种自定义选项。
+**Purpose**: General scatterplot tool to compare two samples, especially suitable for piRNA trimming data, using ggplot2 with extensive customization.
 
-**特点**：
-1. 自动检查并安装所需的R包
-2. 自动处理多个样本，生成所有样本对之间的比较图
-3. 动态调整颜色映射范围，根据数据的fold change分布
-4. 支持对数坐标轴和线性坐标轴
-5. 美观的可视化效果，包括对角线参考线和颜色条
-6. 支持样本配置文件，自动识别对照组和处理组
-7. 根据样本类型自动调整样本顺序，确保对照组在x轴，处理组在y轴
+**Features**:
+1. Auto-check and install required R packages
+2. Handle multiple samples and generate pairwise comparisons
+3. Dynamic color scale based on fold-change distribution
+4. Support for log or linear axes
+5. Clean visuals including diagonal reference line and colorbar
+6. Support a sample config file to identify control/treatment
+7. Auto-order axes with control on x-axis and treatment on y-axis
 
-**用法**：
+**Usage**:
 ```bash
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/output [--sample_config=/path/to/sample_config.txt]
 ```
 
-**参数说明**：
-- `--input_dir`：输入CSV文件所在目录（必需）
-- `--output_dir`：输出PDF文件保存目录（必需）
-- `--sample_config`：样本配置文件路径，包含样本名称和类型信息（可选）
-- `--pattern`：用于筛选CSV文件的模式，默认为"_pirna_trim.csv"
-- `--id_column`：用于合并数据的ID列名，默认为"piRNA_ID"
-- `--value_column`：用于比较的数值列名，默认为"Trim_index"
-- `--log_scale`：是否使用对数坐标轴，默认为TRUE
-- `--point_size`：点的大小，默认为1
-- `--point_alpha`：点的透明度，默认为0.7
-- `--width`：输出PDF的宽度(英寸)，默认为7
-- `--height`：输出PDF的高度(英寸)，默认为7
+**Options**:
+- `--input_dir`: Directory of input CSV files (required)
+- `--output_dir`: Directory to save output PDFs (required)
+- `--sample_config`: Optional sample config file with sample names and types
+- `--pattern`: File name pattern to select CSVs (default: "_pirna_trim.csv")
+- `--id_column`: ID column for merging data (default: "piRNA_ID")
+- `--value_column`: Numeric column used for comparison (default: "Trim_index")
+- `--log_scale`: Whether to use log scales (default: TRUE)
+- `--point_size`: Point size (default: 1)
+- `--point_alpha`: Point transparency (default: 0.7)
+- `--width`: PDF width in inches (default: 7)
+- `--height`: PDF height in inches (default: 7)
 
-**样本配置文件格式**：
-样本配置文件是一个简单的文本文件，每行包含一个样本的信息，格式为：
+**Sample config format**:
+The sample config is a plain text file; each line contains:
 ```
-<样本名称> <样本类型>
+<sample_name> <sample_type>
 ```
 其中样本类型可以是`untreatment`（对照组）或`treatment`（处理组）。
 
-示例：
+Example:
 ```
 Control untreatment
 DHX15-KD3 treatment
@@ -245,91 +245,90 @@ SUGP1-KD2 treatment
 RNPS1-KD1 treatment
 ```
 
-**示例**：
+**Examples**:
 ```bash
-# 基本用法
+# Basic usage
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/output
 
-# 使用样本配置文件
+# Use a sample config file
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/output \
   --sample_config=/path/to/sample_config.txt
 
-# 自定义参数
+# Custom parameters
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/output \
   --point_size=1.5 --point_alpha=0.5 --log_scale=FALSE --width=10 --height=8
 
-# 使用不同的文件模式和列名
+# Use different file patterns and column names
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/output \
   --pattern="_expression.csv" --id_column="gene_id" --value_column="FPKM"
 ```
 
 #### `plot_featrue_distribution.R`
 
-**功能**：使用tidyplots包绘制环状图（Donut Plot），用于可视化不同类别的分布情况。
+**Purpose**: Draw donut plots to visualize category distributions using the tidyplots package.
 
-**特点**：
-1. 基于tidyplots包实现，生成美观的环状图
-2. 支持自定义颜色方案、图表风格、标签大小等
-3. 自动计算并显示每个类别的百分比
-4. 支持浅色和深色两种主题
-5. 可调整环形宽度和类别排序
+**Features**:
+1. Aesthetically pleasing donut plots via tidyplots
+2. Customizable color palettes, styles, label sizes, etc.
+3. Auto-calculate and display percentage per category
+4. Support light and dark themes
+5. Adjustable donut width and category order
 
-**用法**：
+**Usage**:
 ```bash
-Rscript plot_featrue_distribution.R -i <CSV文件路径> -o <输出图片路径> [其他参数]
+Rscript plot_featrue_distribution.R -i <CSV_path> -o <output_image_path> [options]
 ```
 
-**参数说明**：
-- `-i, --input`：输入CSV文件路径，第一列为类别，第二列为值（必需）
-- `-o, --output`：输出图片文件路径，支持PDF、PNG等格式（默认：donut_plot.pdf）
-- `-t, --title`：图表标题（默认："特征分布"）
-- `-w, --width`：输出图片宽度（英寸）（默认：8）
-- `-e, --height`：输出图片高度（英寸）（默认：8）
-- `-c, --color_palette`：颜色调色板名称，选项有friendly, neutral, vibrant等（默认：friendly）
-- `-l, --label_size`：标签文字大小（默认：12）
-- `-p, --percentage`：是否显示百分比（默认：TRUE）
-- `-d, --donut_width`：环状图的宽度，范围为0-1（默认：0.6）
-- `-s, --style`：图表风格，选项有light或dark（默认：light）
-- `-r, --reverse`：是否反转类别顺序（默认：FALSE）
+**Options**:
+- `-i, --input`: Input CSV path, first column is category and second is value (required)
+- `-o, --output`: Output image path (PDF/PNG etc.) (default: donut_plot.pdf)
+- `-t, --title`: Plot title (default: "Feature distribution")
+- `-w, --width`: Width in inches (default: 8)
+- `-e, --height`: Height in inches (default: 8)
+- `-c, --color_palette`: Palette name (friendly, neutral, vibrant, etc.) (default: friendly)
+- `-l, --label_size`: Label text size (default: 12)
+- `-p, --percentage`: Whether to show percentages (default: TRUE)
+- `-d, --donut_width`: Donut width from 0 to 1 (default: 0.6)
+- `-s, --style`: Plot style (light or dark) (default: light)
+- `-r, --reverse`: Reverse category order (default: FALSE)
 
-**示例**：
+**Examples**:
 ```bash
-# 基本用法
+# Basic usage
 Rscript plot_featrue_distribution.R -i data/feature_counts.csv -o figures/feature_dist.pdf
 
-# 自定义参数
+# Custom parameters
 Rscript plot_featrue_distribution.R -i data/feature_counts.csv -o figures/feature_dist.pdf \
-  -t "基因特征分布" -c vibrant -s dark -d 0.8 -l 14 -r
+  -t "Feature distribution" -c vibrant -s dark -d 0.8 -l 14 -r
 ```
 
-**CSV文件格式示例**：
+**CSV format example**:
 ```
-类别,值
-基因启动子,150
-基因终止子,120
-基因间区,200
-外显子,300
-内含子,250
+Category,Value
+Promoter,150
+Terminator,120
+Intergenic,200
+Exon,300
+Intron,250
 ```
 
-## 注意事项
+## Notes
 
-1. 大多数脚本依赖于特定的文件命名格式，请确保输入文件的命名符合要求。
-2. 处理大量数据时，请注意合理分配 CPU 资源，避免服务器过载。
-3. 使用 `--skip-existing` 参数可以跳过已处理的文件，节省时间。
-4. 使用R脚本（如`plot_scatter_comparison.R`）需要安装R环境，脚本会自动安装所需的R包。
-5. 对于piRNA剪切数据的比较，建议使用R脚本`plot_scatter_comparison.R`而非Python脚本，因为R脚本能够正确地显示所有数据点。
-6. 当处理大量数据点（如每个样本40万+数据点）时，生成的PDF文件可能会较大（约8-10MB），请确保有足够的磁盘空间。
+1. Most scripts rely on specific file naming conventions; ensure inputs follow the expected patterns.
+2. When processing large datasets, allocate CPU resources wisely to avoid overloading the server.
+3. Use `--skip-existing` to skip previously processed files and save time.
+4. R scripts (e.g., `plot_scatter_comparison.R`) require an R environment; the script auto-installs required packages.
+5. For piRNA trimming comparisons, prefer the R script `plot_scatter_comparison.R` over the Python version to correctly render all points.
+6. Large point counts (e.g., 400k+ per sample) can yield large PDFs (~8–10 MB); ensure sufficient disk space.
 
 #### process_fastq_with_fastp.sh
 
 ```bash
-# 单端模式（适用于smRNA-seq）
-scripts/process_fastq_with_fastp.sh 输入目录 输出目录
+# Single-end mode (for smRNA-seq)
+scripts/process_fastq_with_fastp.sh <input_dir> <output_dir>
 
-# 双端模式（适用于常规双端测序）
-scripts/process_fastq_with_fastp.sh -p 输入目录 输出目录
+# Paired-end mode (for standard PE sequencing)
+scripts/process_fastq_with_fastp.sh -p <input_dir> <output_dir>
 
-# 查看帮助
+# Help
 scripts/process_fastq_with_fastp.sh -h
-```
