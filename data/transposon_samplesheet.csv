@@ -1,0 +1,6 @@
+sample,fastq_1,fastq_2,strandedness
+control,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/control_R1.fq.gz,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/control_R2.fq.gz,auto	
+DHX15,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/DHX15_R1.fq.gz,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/DHX15_R2.fq.gz,auto	
+RNPS1,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/RNPS1_R1.fq.gz,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/RNPS1_R2.fq.gz,auto	
+SUGP1-Rep1,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/SUGP1-Rep1_R1.fq.gz,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/SUGP1-Rep1_R2.fq.gz,auto	
+SUGP1-Rep2,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/SUGP1-Rep2_R1.fq.gz,/home/gyk/project/ld_pirna/data/bm_mRNA_raw_data/SUGP1-Rep2_R2.fq.gz,auto	
