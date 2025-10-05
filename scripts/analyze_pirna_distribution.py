@@ -594,11 +594,10 @@ def parse_map_file_optimized(map_file, ref_pirna_file='/home/gyk/project/ld_pirn
         except Exception as e:
             print(f"警告: 解析collapsed文件时出错: {e}")
     else:
-        print(f"警告: 找不到对应的collapsed文件: {collapsed_file}")
+        print(f"Warning: collapsed file not found: {collapsed_file}")
     
-    # 读取map文件
-    map_start_time = time.time()
-    print(f"开始解析map文件: {map_file}")
+    # Read map file
+    print(f"Parsing map file: {map_file}")
     try:
         # 使用pandas分块读取TSV格式的map文件，减少内存使用
         # 首先获取列名
@@ -617,8 +616,8 @@ def parse_map_file_optimized(map_file, ref_pirna_file='/home/gyk/project/ld_pirn
         # 分块读取并处理
         reader = pd.read_csv(map_file, sep='\t', skiprows=1, header=None, names=column_names, chunksize=chunk_size)
         
-        # 使用进度条显示处理进度
-        with tqdm(total=line_count, desc="处理map文件") as pbar:
+        # Show progress bar
+        with tqdm(total=line_count, desc="Parsing map file") as pbar:
             for chunk in reader:
                 chunk_size = len(chunk)
                 total_count += chunk_size
