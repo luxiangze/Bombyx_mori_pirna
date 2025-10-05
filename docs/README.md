@@ -170,19 +170,19 @@ intersectBed -a data/bm_smRNA_pirna_diffrencial_out/Control_vs_DHX15-KD3-control
 ## B. mori transposon analysis
 **分析思路**
 
-1. 首先对原始测序数据进行质控，查看其是否已经经过质控，软件：fastqc
+1. First, perform quality control on raw sequencing data to check whether QC has already been applied (software: FastQC).
 
 ```bash
-# 对原始数据进行质控
+# Quality control for raw data
 cd data/bm_mRNA_raw_data
 mkdir -p fastqc_output multiqc_report
 fastqc -o fastqc_output -t 70 *.fq.gz
 
-# 使用MultiQC汇总质控报告
+# Summarize QC reports with MultiQC
 multiqc fastqc_output -o multiqc_report
 ```
 
-3. 根据数据质控结果，发现部分数据中的接头还未去除，使用fastp进行接头去除。
+3. Based on QC results, some adapters were not removed in part of the data; adapters were trimmed using fastp.
 
 ```bash
 scripts/process_fastq_with_fastp.sh -p data/bm_mRNA_raw_data data/bm_mRNA_clean_data
@@ -192,10 +192,10 @@ mkdir -p multiqc_report
 multiqc fastp_reports -o multiqc_report
 ```
 
-2. 使用 STAR 比对到转座子基因组上，使用 samtools 转换为 bam 格式，并且进行排序。
+2. Align reads to the transposon genome using STAR, convert to BAM with samtools, and sort.
 
 ```bash
-# 创建STAR Index
+# Create STAR index
 cd ~/reference/bm_ncbi/GCF_030269925.1
 STAR --runThreadN 70 --runMode genomeGenerate --genomeDir STARIndex \
 --genomeFastaFiles GCF_030269925.1_ASM3026992v2_genomic_chr.fa \

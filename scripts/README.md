@@ -1,30 +1,30 @@
-# piRNA 分析脚本说明文档
+# piRNA Analysis Scripts Guide
 
-本目录包含用于分析 piRNA 数据的各种脚本。这些脚本主要用于处理测序数据、分析 piRNA 长度分布、位置特异性等特征，以及识别未处理的序列。
+This directory contains various scripts for analyzing piRNA data. These scripts are used to process sequencing data, analyze piRNA length distributions and positional features, and identify unprocessed sequences.
 
-## 快速开始
+## Quick Start
 
-以下是一个完整的piRNA分析流程示例：
+Below is a complete example workflow for piRNA analysis:
 
 ```bash
-# 1. 处理原始测序数据
+# 1. Process raw sequencing data
 ./process_pirna.sh /path/to/fastq_files /path/to/output 8
 
-# 2. 分析piRNA的长度分布、位置特异性等
+# 2. Analyze piRNA length distribution and positional features
 ./batch_analyze_pirna.sh /path/to/output/map_files /path/to/results Control.map
 
-# 3. 使用R脚本绘制样本间的比较图
+# 3. Plot sample-to-sample comparison using the R script
 Rscript plot_scatter_comparison.R --input_dir=/path/to/results --output_dir=/path/to/figures \
   --sample_config=/path/to/sample_config.txt
 ```
 
-如果您只需要重新绘制图表，可以使用：
+If you only need to replot figures from existing CSV results, use:
 
 ```bash
-# 从已生成的CSV文件重新绘制图表
+# Replot figures from previously generated CSV files
 python3 replot_from_csv.py -i /path/to/csv_files -o /path/to/replotted_figures
 
-# 或者使用R脚本绘制样本间的比较图
+# Or plot sample-to-sample comparison using the R script
 Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/path/to/figures
 ```
 
