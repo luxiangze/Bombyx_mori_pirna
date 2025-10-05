@@ -1,0 +1,63 @@
+# 系统与编辑器临时文件
+.DS_Store
+*~
+.history
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+
+# 数据目录和大型数据文件
+data/**
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.fasta
+*.fasta.gz
+*.fa
+*.fa.gz
+*.sam
+*.bam
+*.map
+*.collapsed
+*.bed
+*.gff
+*.gtf
+*Index*
+
+# 重要参考文件例外（保留在版本控制中）
+
+
+# 配置示例保留
+!data/sample_config.txt
+!data/sample_map.txt
+!data/transposon_samplesheet.csv
+
+# 结果与日志文件
+results/**
+logs/**
+
+# 工作与临时目录
+work/**
+tmp/
+temp/
+workflow/*
+.history
+.vscode
+
+# 容器镜像
+sifs/*.sif
+
+# 保留空目录结构
+!logs/.gitkeep
+!work/.gitkeep
+!sifs/.gitkeep
+!results/.gitkeep
+!data/.gitkeep
