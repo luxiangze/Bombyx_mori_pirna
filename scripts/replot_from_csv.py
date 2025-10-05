@@ -188,7 +188,7 @@ def plot_combined_distributions(all_data, output_prefix):
     plt.xlabel('Length (nt)')
     plt.ylabel('Percentage (%)')
     plt.title('Unique Reads Length Distribution')
-    # 确保x轴刻度为整数
+    # Ensure x-axis ticks are integers
     plt.gca().xaxis.set_major_locator(plt.MultipleLocator(1))
     plt.legend()
     plt.tight_layout()

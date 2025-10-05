@@ -213,7 +213,7 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
   
   message(paste("Saved:", output_file))
   
-  # 返回处理的数据
+  # Return processed data
   return(list(plot = p, data = plot_data))
 }
 
@@ -231,7 +231,7 @@ main <- function() {
   
   message(paste("Found", length(data_files), "files to process"))
   
-  # 处理每个文件
+  # Process each file
   results <- lapply(data_files, function(file) {
     tryCatch({
       process_file(file, opt$output_dir, opt$p_value_cutoff, opt$pdf, opt$use_fdr, opt$min_length, opt$max_length)
@@ -241,7 +241,7 @@ main <- function() {
     })
   })
   
-  # 过滤掉NULL结果
+  # Filter out NULL results
   results <- results[!sapply(results, is.null)]
   
   if (length(results) > 0) {
@@ -251,5 +251,5 @@ main <- function() {
   }
 }
 
-# 执行主函数
+# Execute main function
 main()

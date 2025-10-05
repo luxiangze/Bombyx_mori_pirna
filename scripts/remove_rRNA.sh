@@ -170,14 +170,14 @@ process_file() {
 # Start processing
 echo "Start processing..." | tee -a "$LOG_FILE"
 
-# 初始化计数器
+# Initialize counter
 COMPLETED=0
 
 # Read file list and dispatch jobs
 while read -r file; do
     # Throttle concurrency to MAX_PARALLEL_JOBS
     while [ $(jobs -p | wc -l) -ge $MAX_PARALLEL_JOBS ]; do
-        # 等待任一后台任务完成
+        # Wait for any background task to finish
         sleep 1
     done
 

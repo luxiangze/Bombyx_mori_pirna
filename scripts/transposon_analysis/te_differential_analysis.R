@@ -70,7 +70,7 @@ if (length(unique(colnames_mapped)) < length(colnames_mapped)) {
   rownames(counts_merged) <- rownames(counts_data)
   colnames(counts_merged) <- unique(colnames_mapped)
 
-  # 对重复样本进行合并（取平均值）
+  # Merge replicated samples (average)
   for (col_name in unique(colnames_mapped)) {
     col_indices <- which(colnames_mapped == col_name)
     if (length(col_indices) > 1) {
@@ -114,14 +114,14 @@ if (design_rank < ncol(design) || min_samples_per_group < 2) {
   cat("Using simplified differential analysis mode, set BCV=0.2\n")
   use_simplified_mode <- TRUE
 
-  # 切换到简化的exactTest模式而不是GLM模式
+  # Switch to simplified exactTest mode instead of GLM
   bcv <- 0.2  # Set biological coefficient of variation
   y$common.dispersion <- bcv^2
   y$tagwise.dispersion <- rep(bcv^2, nrow(y))
 
-  # 不调用glmQLFit，在差异分析时使用exactTest
+  # Do not call glmQLFit; use exactTest for differential analysis
 } else {
-  # 标准模式：正常估计离散度并进行似然比检验
+  # Standard mode: estimate dispersion and perform likelihood ratio test
   y <- estimateDisp(y, design)
   fit <- glmQLFit(y, design)
 }
@@ -139,47 +139,47 @@ if (length(control_samples) > 0 && length(treatment_groups) > 0) {
     treatment_short <- gsub("-.*$", "", treatment)  # Shorten treatment name
     comparison_name <- paste0(treatment_short, "_vs_Control")
 
-    # 获取该处理的分组标识
+    # Get group label for this treatment
     treatment_group <- sample_subset$condition[sample_subset$sample_name == treatment]
 
-    # 根据分析模式选择差异分析方法
+    # Choose differential analysis method based on mode
     if (use_simplified_mode) {
-      # 简化模式：使用exactTest
-      # 注意：要使用exactTest，需要创建单组比较的设置
-      # 编码处理组为1，对照组为2
+      # Simplified mode: use exactTest
+      # Note: exactTest requires a single-group comparison setup
+      # Encode treatment as 1, control as 2
       group_for_exact <- rep(2, ncol(y))  # Default all samples to control
       # Set 1 at treatment sample positions
       group_for_exact[y$samples$group == treatment_group] <- 1
 
-      # 创建一个新的DGEList仅包含当前实验组和对照组
+      # Create a new DGEList containing current treatment and control only
       samples_to_include <- y$samples$group %in% c(treatment_group, "untreatment")
       if (sum(samples_to_include) > 0) {
         y_exact <- y[, samples_to_include]
         y_exact$samples$group <- factor(ifelse(y_exact$samples$group == treatment_group, "treatment", "control"))
 
-        # 使用exactTest进行差异分析
+        # Perform differential analysis with exactTest
         et <- exactTest(y_exact, dispersion=bcv^2)
         results <- topTags(et, n = Inf)
       } else {
         stop("Error: unable to find ", treatment_group, " samples with untreatment")
       }
     } else {
-      # 标准模式：使用glmQLFTest
-      # 创建对比矩阵
+      # Standard mode: use glmQLFTest
+      # Create contrast matrix
       contrasts <- makeContrasts(contrasts = paste0(treatment_group, " - untreatment"), levels = design)
 
-      # 差异分析
+      # Differential analysis
       qlf <- glmQLFTest(fit, contrast = contrasts)
 
-      # 提取差异表达结果
+      # Extract differential expression results
       results <- topTags(qlf, n = Inf)
     }
 
-    # 输出结果到文件
+    # Write results to file
     result_file <- file.path(output_dir, paste0(comparison_name, "_results.tsv"))
     write.table(results$table, result_file, sep = "\t", quote = FALSE, row.names = TRUE)
 
-    # 火山图
+    # Volcano plot
     results_df <- data.frame(results$table)
     results_df$TE <- rownames(results_df)
     results_df$significant <- ifelse(results_df$FDR < 0.05,
@@ -195,10 +195,10 @@ if (length(control_samples) > 0 && length(treatment_groups) > 0) {
       geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
       geom_vline(xintercept = c(-1, 1), linetype = "dashed")
 
-    # 保存火山图
+    # Save volcano plot
     ggsave(file.path(output_dir, paste0(comparison_name, "_volcano.pdf")), p, width = 8, height = 7)
 
-    # 生成摘要
+    # Generate summary
     sig_up <- sum(results_df$FDR < 0.05 & results_df$logFC > 0)
     sig_down <- sum(results_df$FDR < 0.05 & results_df$logFC < 0)
 

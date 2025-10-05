@@ -170,7 +170,7 @@ def plot_combined_unique_reads_length(all_unique_data, output_prefix):
     plt.xlabel('Length (nt)')
     plt.ylabel('Percentage of unique sequences (%)')
     plt.title('Unique Reads Length Distribution Comparison')
-    # 确保x轴刻度为整数
+    # Ensure x-axis ticks are integers
     plt.gca().xaxis.set_major_locator(plt.MultipleLocator(1))
     plt.legend()
 

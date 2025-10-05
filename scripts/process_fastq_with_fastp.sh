@@ -32,13 +32,12 @@ while [ $# -gt 0 ]; do
             elif [ -z "$OUTPUT_DIR" ]; then
                 OUTPUT_DIR="$1"
             else
-                echo "错误: 未知参数 $1"
+                echo "Error: Unknown argument $1"
                 usage
             fi
             shift
             ;;
     esac
-done
 
 # Validate required args
 if [ -z "$INPUT_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
@@ -63,12 +62,12 @@ echo "Input dir: $INPUT_DIR"
 echo "Output dir: $OUTPUT_DIR"
 echo "Report dir: $REPORT_DIR"
 
-# 计数器
+# Counter
 if [ "$PAIRED_MODE" = true ]; then
-    # 双端模式下计算R1文件数量
+    # In paired-end mode, count number of R1 files
     total_files=$(find "$INPUT_DIR" \( -name "*_R1*.fastq.gz" -o -name "*_R1*.fq.gz" -o -name "*_1.fastq.gz" -o -name "*_1.fq.gz" \) | wc -l)
 else
-    # 单端模式下计算所有文件数量
+    # In single-end mode, count all files
     total_files=$(find "$INPUT_DIR" -name "*.fastq.gz" -o -name "*.fq.gz" | wc -l)
 fi
 processed=0
@@ -79,7 +78,7 @@ if [ $total_files -eq 0 ]; then
     exit 1
 fi
 
-# 根据模式处理文件
+# Processing files according to schema
 if [ "$PAIRED_MODE" = true ]; then
     # Paired-end: find all R1 files
     for r1_file in $(find "$INPUT_DIR" \( -name "*_R1*.fastq.gz" -o -name "*_R1*.fq.gz" -o -name "*_1.fastq.gz" -o -name "*_1.fq.gz" \)); do
@@ -113,7 +112,7 @@ if [ "$PAIRED_MODE" = true ]; then
 
         echo "Processing paired sample: $base_name ($((processed+1)) / $total_files pairs)"
 
-        # 输出文件路径
+        # Output file paths
         output_r1="$OUTPUT_DIR/${base_name}_R1.clean.fastq.gz"
         output_r2="$OUTPUT_DIR/${base_name}_R2.clean.fastq.gz"
 
@@ -147,17 +146,17 @@ else
             continue
         fi
 
-        # 获取文件名（不含路径和扩展名）
+        # Get filename (without path and extension)
         if [[ "$fastq_file" == *.fastq.gz ]]; then
             filename=$(basename "$fastq_file" .fastq.gz)
         else
             filename=$(basename "$fastq_file" .fq.gz)
         fi
 
-        # 输出文件路径
+        # Output file path
         output_file="$OUTPUT_DIR/${filename}.clean.fastq.gz"
 
-        # fastp 报告文件
+        # fastp report files
         html_report="$REPORT_DIR/${filename}.html"
         json_report="$REPORT_DIR/${filename}.json"
 
