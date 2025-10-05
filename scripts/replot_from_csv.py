@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import argparse
 import glob
 
-
 # Use a light color theme consistent with the original script
 plt.style.use('seaborn-v0_8-pastel')
 
@@ -133,7 +132,7 @@ def plot_combined_distributions(all_data, output_prefix):
     plt.xticks([-2, -1, 0, 1, 2])
     # Ensure y-axis starts at 0
     plt.ylim(bottom=0)
-    # 确保x轴刻度为整数
+    # Ensure that the x-axis scale is an integer.
     plt.gca().xaxis.set_major_locator(plt.MultipleLocator(1))
     plt.legend()
     plt.tight_layout()
@@ -153,7 +152,7 @@ def plot_combined_distributions(all_data, output_prefix):
     plt.xlabel("3' relative position")
     plt.ylabel('% of analyzed piRNA loci')
     plt.title("3' End Position")
-    # 确保x轴刻度为整数
+    # Ensure the x-axis scale is an integer.
     plt.gca().xaxis.set_major_locator(plt.MultipleLocator(1))
     plt.legend()
     plt.tight_layout()
