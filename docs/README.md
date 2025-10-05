@@ -1,4 +1,4 @@
-# piRNA项目
+# piRNA Project
 
 ## data preprocessing
 
@@ -22,7 +22,7 @@ python3 $PWD/scripts/plot_length_distribution.py $PWD/data/dm_smRNA_clean_data_x
 
 ```
 
-<!-- ## piRNA分析--piPipes
+<!-- ## piRNA analysis--piPipes
 
 ```bash
 # Batch processing of multiple samples with piPipes
@@ -109,13 +109,13 @@ cat results/pirna_edger_pairwise_out/Control_vs_SUGP1-KD2_edger_results_with_cou
 csvtk filter -f "logFC<0" | \
 csvtk plot hist -f Length --bins 9 --title "Downregulated piRNA length distribution" -o results/pirna_edger_pairwise_out/Control_vs_SUGP1-KD2_downregulated_pirna_length_distribution.pdf
 
-# 提取差异piRNA
+# Extract differential piRNAs
 python scripts/csv2fa.py results/pirna_edger_pairwise_out/Control_vs_SUGP1-KD2_edger_results_with_counts_FDR_0.05_length.csv
 
 python3 scripts/csv2fa.py results/pirna_edger_pairwise_out/Control_vs_DHX15-KD3_edger_results_with_counts_FDR_0.05_length.csv
 
 
-# 使用seqmap进行piRNA映射
+# Map piRNAs using seqmap
 for file in data/bm_smRNA_pirna_diffrencial/*.fa.collapsed
 do
     FILENAME=$(basename "$file" | sed 's/\.fa\.collapsed//')
@@ -123,7 +123,7 @@ do
     OUTPUT_DIR="data/bm_smRNA_pirna_diffrencial"
     seqmap 0 data/bmo.v3.0.fa "$OUTPUT_DIR/${FILENAME}.fa.collapsed" "$OUTPUT_DIR/${FILENAME}.fa.collapsed.map" \
     /do_not_output_probe_without_match /forward_strand /cut:3,23 /output_all_matches >> "$FILE_LOG" 2>&1
-    # 使用awk过滤出map文件的第1，2，4列，3减去第二列，然后过滤掉第二列小于-2的行
+    # Use awk to extract columns 1,2,4; compute 3 minus column 2; then filter rows where column 2 > -3
     awk '{print $4"\t"3-$2"\t"$1}' "$OUTPUT_DIR/${FILENAME}.fa.collapsed.map" | awk '$2 > -3' > "$OUTPUT_DIR/${FILENAME}.fa.collapsed.map.filtered"
     mv "$OUTPUT_DIR/${FILENAME}.fa.collapsed.map.filtered" "$OUTPUT_DIR/${FILENAME}.fa.collapsed.map"
 done
@@ -168,7 +168,7 @@ intersectBed -a data/bm_smRNA_pirna_diffrencial_out/Control_vs_DHX15-KD3-control
 ```
 
 ## B. mori transposon analysis
-**分析思路**
+**Analysis overview**
 
 1. First, perform quality control on raw sequencing data to check whether QC has already been applied (software: FastQC).
 
@@ -188,7 +188,7 @@ multiqc fastqc_output -o multiqc_report
 scripts/process_fastq_with_fastp.sh -p data/bm_mRNA_raw_data data/bm_mRNA_clean_data
 cd data/bm_mRNA_clean_data
 mkdir -p multiqc_report
-# 使用MultiQC汇总质控报告
+# Summarize QC reports with MultiQC
 multiqc fastp_reports -o multiqc_report
 ```
 
@@ -212,10 +212,10 @@ STAR --runThreadN 14 --genomeDir reference/STARIndex \
      --outFileNamePrefix $output_dir/ --outSAMtype BAM Unsorted'
 ```
 
-3. 使用 TEcounts 进行转座子计数
+3. Quantify transposons with TEcounts
 
 ```bash
-## python /home/gyk/project/ld_pirna/scripts/transposon_analysis/hite_to_tetranscripts_gtf.py <输入gff文件> <输出gtf文件>
+## python /home/gyk/project/ld_pirna/scripts/transposon_analysis/hite_to_tetranscripts_gtf.py <input GFF> <output GTF>
 python /home/gyk/project/ld_pirna/scripts/transposon_analysis/hite_to_tetranscripts_gtf.py \
 /home/gyk/project/ld_pirna/reference/HiTE.full_length.gff \
 /home/gyk/project/ld_pirna/reference/HiTE.full_length.tetranscripts.gtf
@@ -232,12 +232,12 @@ apptainer exec sifs/tetranscripts.sif TEcount \
   --TE reference/HiTE.full_length.tetranscripts.gtf \
   --outdir work/trasposon_analysis/TEcount --project $sample_name'
 
-# 合并所有样本的转座子计数结果
-# 先进入TEcount目录
+# Merge TEcount results for all samples
+# Enter the TEcount directory first
 cd /home/gyk/project/ld_pirna/work/trasposon_analysis/TEcount
 
-# 合并文件并重命名列
-# 修正后的命令
+# Merge files and rename columns
+# Corrected command
 csvtk join -t -f "1" \
 	DHX15.cntTable RNPS1.cntTable SUGP1-Rep1.cntTable SUGP1-Rep2.cntTable control.cntTable \
 	--na "0" | \
@@ -245,16 +245,16 @@ csvtk join -t -f "1" \
 	--out-file merged_TEcount.tsv
 ```
 
-4. 使用edger进行差异分析
+4. Differential analysis with edgeR
 
 ```r
-# 运行已编写的差异分析脚本
-# 参数：计数矩阵文件、样本配置文件、输出目录
+# Run the differential analysis script
+# Arguments: count matrix, sample config, output directory
 Rscript scripts/transposon_analysis/te_differential_analysis.R \
   work/trasposon_analysis/TEcount/merged_TEcount.tsv \
   data/sample_config.txt \
   work/trasposon_analysis/edgeR_results
 
-# 或不带参数运行，使用脚本中的默认路径
+# Or run without arguments to use defaults in the script
 # Rscript scripts/transposon_analysis/te_differential_analysis.R
 ```

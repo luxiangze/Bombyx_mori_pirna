@@ -1,4 +1,4 @@
-# 系统与编辑器临时文件
+# System and editor temporary files
 .DS_Store
 *~
 .history
@@ -13,7 +13,7 @@ __pycache__/
 .RData
 .Ruserdata
 
-# 数据目录和大型数据文件
+# Data directories and large files
 data/**
 *.fastq
 *.fastq.gz
@@ -32,19 +32,19 @@ data/**
 *.gtf
 *Index*
 
-# 重要参考文件例外（保留在版本控制中）
+# Important reference files exceptions (keep in VCS)
 
 
-# 配置示例保留
+# Keep example configs
 !data/sample_config.txt
 !data/sample_map.txt
 !data/transposon_samplesheet.csv
 
-# 结果与日志文件
+# Results and log files
 results/**
 logs/**
 
-# 工作与临时目录
+# Work and temp directories
 work/**
 tmp/
 temp/
@@ -52,10 +52,10 @@ workflow/*
 .history
 .vscode
 
-# 容器镜像
+# Container images
 sifs/*.sif
 
-# 保留空目录结构
+# Keep empty directory structure
 !logs/.gitkeep
 !work/.gitkeep
 !sifs/.gitkeep
