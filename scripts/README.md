@@ -8,10 +8,12 @@ Below is a complete example workflow for piRNA analysis:
 
 ```bash
 # 1. Process raw sequencing data
-./process_pirna.sh /path/to/fastq_files /path/to/output 8
+# Usage: ./process_pirna.sh <input_dir> <output_dir> <reference_piRNA_fasta> [--skip-existing] [--reverse]
+./process_pirna.sh /path/to/fastq_files /path/to/output /path/to/piRNA_reference.fa --skip-existing
 
 # 2. Analyze piRNA length distribution and positional features
-./batch_analyze_pirna.sh /path/to/output/map_files /path/to/results Control.map
+# Usage: ./batch_analyze_pirna.sh <map_dir> <output_dir> <sample_config>
+./batch_analyze_pirna.sh /path/to/output/map_files /path/to/results /path/to/sample_config.txt
 
 # 3. Plot sample-to-sample comparison using the R script
 Rscript plot_scatter_comparison.R --input_dir=/path/to/results --output_dir=/path/to/figures \
@@ -38,16 +40,15 @@ Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/p
 
 **Usage**:
 ```bash
-./process_pirna.sh <input_dir> <output_dir> [num_parallel] [reference_genome_path] [log_dir] [--skip-existing]
+./process_pirna.sh <input_dir> <output_dir> <reference_piRNA_fasta> [--skip-existing] [--reverse]
 ```
 
 **Parameters**:
 - `<input_dir>`: Directory containing raw FASTQ files
 - `<output_dir>`: Output directory for processed results
-- `[num_parallel]`: Optional, number of files to process in parallel (default: 4)
-- `[reference_genome_path]`: Optional, path to piRNA reference genome file
-- `[log_dir]`: Optional, directory to store logs
-- `[--skip-existing]`: Optional, skip processing if results already exist
+- `<reference_piRNA_fasta>`: Path to reference piRNA FASTA file
+- `--skip-existing`: Skip processing if outputs already exist
+- `--reverse`: Enable reverse-sequence processing using a reversed reference (generated once)
 
 #### `process_fastq_with_fastp.sh`
 
@@ -55,7 +56,9 @@ Rscript plot_scatter_comparison.R --input_dir=/path/to/csv_files --output_dir=/p
 
 **Usage**:
 ```bash
-./process_fastq_with_fastp.sh <input_path> <output_dir>
+./process_fastq_with_fastp.sh <input_dir> <output_dir>
+# Paired-end
+./process_fastq_with_fastp.sh --paired <input_dir> <output_dir>
 ```
 
 ### piRNA Analysis Package
@@ -117,12 +120,12 @@ python3 replot_from_csv.py -i <csv_dir> -o <output_dir> [-p <output_prefix>]
 
 #### `batch_analyze_pirna.sh`
 
-**Purpose**: Batch-analyze all .map files in the specified directory with automatic CPU resource allocation.
+**Purpose**: Batch-analyze .map files using a sample config to pair control and treatment.
 
 **Features**:
 1. Auto-discover all .map files under the given directory
-2. Optional control file (default: Control.fa.collapsed.no-dust.map)
-3. Dynamic CPU allocation targeting ~90% of server CPU usage
+2. Sample config drives control/treatment pairing (untreatment = control)
+3. Dynamic CPU allocation targeting ~90% total CPU usage
 4. Analyze unprocessed sequences for both 32 nt and 28 nt
 5. Timestamped log files
 6. Detailed run information and error handling
@@ -235,7 +238,7 @@ The sample config is a plain text file; each line contains:
 ```
 <sample_name> <sample_type>
 ```
-其中样本类型可以是`untreatment`（对照组）或`treatment`（处理组）。
+Where sample_type is `untreatment` (control) or `treatment`.
 
 Example:
 ```
@@ -332,3 +335,27 @@ scripts/process_fastq_with_fastp.sh -p <input_dir> <output_dir>
 
 # Help
 scripts/process_fastq_with_fastp.sh -h
+
+#### remove_rRNA.sh
+
+Remove rRNA sequences using Bowtie (supports gz inputs and parallel jobs).
+
+```bash
+scripts/remove_rRNA.sh <input_dir> <bowtie_index_dir> <output_dir>
+```
+
+#### rename.sh
+
+Batch-rename FASTQ files based on a mapping file and write md5 checksums.
+
+```bash
+scripts/rename.sh <data_dir> <sample_map.txt>
+# sample_map.txt: each line "old_prefix new_prefix"
+```
+
+#### count_length.sh
+
+Count read length distribution across all *.fq.gz files in a directory and write a merged table.
+
+```bash
+scripts/count_length.sh <target_dir>

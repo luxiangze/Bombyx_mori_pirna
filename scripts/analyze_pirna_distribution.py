@@ -1,38 +1,34 @@
 #!/usr/bin/env python3
 """
-分析piRNA的长度分布、5'端位移分布和3'端相对位置分布
-使用方法：
+Analyze piRNA length distribution, 5' end shift distribution, and 3' end relative position.
+Usage:
     python analyze_pirna_distribution.py -i <map_file1> [<map_file2> ...] -o <output_directory>
-或：
+or:
     python analyze_pirna_distribution.py --input <map_file1> [<map_file2> ...] --output <output_directory>
 """
 
-import sys
 import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import time
 import multiprocessing as mp
-from functools import partial
 from collections import defaultdict
 from Bio import SeqIO
-from Bio.Seq import Seq
 from tqdm import tqdm
 
 def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo.v3.0.fa'):
-    """解析seqmap生成的map文件,提取测序序列与参考piRNA的比对信息
-    去除比对起始位置大于6的序列
-    
-    新的map文件格式示例：
+    """Parse seqmap-generated map file and extract alignments to reference piRNAs.
+    Filter out reads with alignment start position > 6 (original trans_coord > 9).
+
+    Map file example (new format):
     trans_id        trans_coord     target_seq      probe_id        probe_seq       num_mismatch
-    piR-bmo-1       1       TCCCGTATGGTCTAGTGGCTA   208883-4        TCCCGTATGGTCTAGTGGCTA   0
-    
-    注意：
-    1. 使用每条序列的3-23nt的序列比对到参考piRNA上，因此start_pos需要减去3
-    2. ref_seq需要从ref_pirna_file中获取，而不是target_seq
-    3. read_seq在collapsed_file中，需要用probe_id来进行调用
+    piR-bmo-1       1               TCCCGTATGGTCTAGTGGCTA   208883-4    TCCCGTATGGTCTAGTGGCTA   0
+
+    Notes:
+    1) We align positions 3–23 of each read; therefore start_pos = trans_coord - 3.
+    2) ref_seq should be obtained from ref_pirna_file, not from target_seq.
+    3) read_seq is in the collapsed file; use probe_id to retrieve it when available.
     """
     # 存储每条读取序列比对到的参考piRNA数量
     read_to_pirna_count = defaultdict(int)
@@ -47,16 +43,16 @@ def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo
     filtered_count = 0
     total_count = 0
     
-    print(f"开始解析参考piRNA文件: {ref_pirna_file}")
+    print(f"Parsing reference piRNA file: {ref_pirna_file}")
     # 从参考piRNA文件中读取序列
     pirna_sequences = {}
     try:
         for record in SeqIO.parse(ref_pirna_file, "fasta"):
             pirna_sequences[record.id] = str(record.seq)
-        print(f"成功读取了 {len(pirna_sequences)} 条参考piRNA序列")
+        print(f"Loaded {len(pirna_sequences)} reference piRNA sequences")
     except Exception as e:
-        print(f"警告: 读取参考piRNA文件时出错: {e}")
-        print("将使用target_seq作为替代")
+        print(f"Warning: error reading reference piRNA file: {e}")
+        print("Fallback to target_seq")
     
     # 查找对应的.fa.collapsed文件以获取序列计数信息
     collapsed_file = map_file.replace('.map', '')
@@ -71,13 +67,13 @@ def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo
         for possible_file in possible_collapsed_files:
             if os.path.exists(possible_file):
                 collapsed_file = possible_file
-                print(f"找到collapsed文件: {collapsed_file}")
+                print(f"Found collapsed file: {collapsed_file}")
                 break
     
     # 使用Biopython从collapsed文件中读取序列计数信息和序列本身
     seq_counts = {}
     if os.path.exists(collapsed_file):
-        print(f"解析collapsed文件: {collapsed_file}")
+        print(f"Parsing collapsed file: {collapsed_file}")
         try:
             for record in SeqIO.parse(collapsed_file, "fasta"):
                 # 从FASTA头部提取计数信息
@@ -95,21 +91,21 @@ def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo
                 # 同时存储序列ID和序列的映射关系
                 read_sequences[record.id] = seq
             
-            print(f"成功读取了 {len(seq_counts)} 条序列及其计数信息")
-            print(f"成功存储了 {len(read_sequences)} 条序列ID与序列的映射关系")
+            print(f"Loaded {len(seq_counts)} sequences with counts")
+            print(f"Stored {len(read_sequences)} read ID-to-sequence mappings")
         except Exception as e:
-            print(f"警告: 解析collapsed文件时出错: {e}")
+            print(f"Warning: error parsing collapsed file: {e}")
     else:
-        print(f"警告: 找不到对应的collapsed文件: {collapsed_file}")
+        print(f"Warning: collapsed file not found: {collapsed_file}")
     
     # 读取map文件
-    print(f"开始解析map文件: {map_file}")
+    print(f"Parsing map file: {map_file}")
     try:
         # 使用pandas读取TSV格式的map文件
         df_map = pd.read_csv(map_file, sep='\t', skiprows=1, header=None)
         # 确保至少有6列
         if df_map.shape[1] < 6:
-            raise ValueError(f"Map文件格式错误: 列数少于6 ({df_map.shape[1]})")
+            raise ValueError(f"Map file format error: fewer than 6 columns ({df_map.shape[1]})")
         
         # 重命名列以便更容易理解
         df_map.columns = ['trans_id', 'trans_coord', 'target_seq', 'probe_id', 'probe_seq', 'num_mismatch'] + \
@@ -130,7 +126,7 @@ def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo
             else:
                 # 如果找不到，使用target_seq作为替代
                 ref_seq = row['target_seq']
-                print(f"警告: 找不到piRNA ID: {pirna_id}的参考序列，使用target_seq作为替代")
+                print(f"Warning: reference piRNA ID not found: {pirna_id}; using target_seq as fallback")
             
             probe_id = row['probe_id']
             read_seq = row['probe_seq']
@@ -139,7 +135,7 @@ def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo
             if probe_id in read_sequences:
                 read_seq = read_sequences[probe_id]
             
-            mismatches = int(row['num_mismatch'])
+            _mismatches = int(row['num_mismatch'])
             
             # 过滤比对起始位置大于6的序列（原始位置大于9）
             if raw_start_pos > 9:  # 相当于调整后的start_pos > 6
@@ -169,11 +165,11 @@ def parse_map_file(map_file, ref_pirna_file='/home/gyk/project/ld_pirna/data/bmo
             read_to_pirna_count[read_key] += 1
             read_to_pirnas[read_key].append((pirna_id, start_pos, len(ref_seq)))
     except Exception as e:
-        print(f"警告: 解析map文件时出错: {e}")
+        print(f"Warning: error parsing map file: {e}")
     
     # 返回过滤统计信息以便在详细模式下显示
     filter_stats = (total_count, filtered_count)
-    print(f"解析完成: 共{total_count}条记录，过滤了{filtered_count}条记录")
+    print(f"Parsing complete: total {total_count} records, filtered {filtered_count}")
     return read_info, read_to_pirna_count, read_to_pirnas, filter_stats
 
 def analyze_length_distribution(read_info, read_to_pirna_count):
@@ -193,7 +189,7 @@ def analyze_length_distribution(read_info, read_to_pirna_count):
     
     # 转换为DataFrame
     lengths = sorted(length_counts.keys())
-    counts = [length_counts[l] for l in lengths]
+    counts = [length_counts[length_val] for length_val in lengths]
     
     df_length = pd.DataFrame({
         'Length': lengths,
@@ -283,7 +279,7 @@ def analyze_3prime_position(read_info, read_to_pirna_count, read_to_pirnas):
     return df_position
 
 def plot_distributions(df_length, df_shift, df_position, sample_name, output_prefix):
-    """绘制分布图"""
+    """Plot distribution figures"""
     # 设置图表样式为浅色系
     plt.style.use('seaborn-v0_8-pastel')
     
@@ -316,7 +312,7 @@ def plot_distributions(df_length, df_shift, df_position, sample_name, output_pre
     plt.close()
 
 def plot_combined_distributions(all_data, output_prefix):
-    """绘制多个样本的分布图，将三个子图分别输出为单独的图片"""
+    """Plot combined distributions for multiple samples; export three figures"""
     # 设置图表样式为浅色系
     plt.style.use('seaborn-v0_8-pastel')
     
@@ -651,7 +647,7 @@ def parse_map_file_optimized(map_file, ref_pirna_file='/home/gyk/project/ld_pirn
                     if probe_id in read_sequences:
                         read_seq = read_sequences[probe_id]
                     
-                    mismatches = int(row['num_mismatch'])
+                    _mismatches = int(row['num_mismatch'])
                     
                     # 过滤比对起始位置大于6的序列（原始位置大于9）
                     if raw_start_pos > 9:  # 相当于调整后的start_pos > 6
@@ -681,13 +677,13 @@ def parse_map_file_optimized(map_file, ref_pirna_file='/home/gyk/project/ld_pirn
                     read_to_pirna_count[read_key] += 1
                     read_to_pirnas[read_key].append((pirna_id, start_pos, len(ref_seq)))
     except Exception as e:
-        print(f"警告: 解析map文件时出错: {e}")
+        print(f"Warning: error parsing map file: {e}")
         import traceback
         traceback.print_exc()
     
     # 返回过滤统计信息以便在详细模式下显示
     filter_stats = (total_count, filtered_count)
-    print(f"解析完成: 共{total_count}条记录，过滤了{filtered_count}条记录，总耗时 {time.time() - start_time:.2f} 秒")
+    print(f"Parsing complete: total {total_count} records, filtered {filtered_count}, elapsed {time.time() - start_time:.2f} s")
     return read_info, read_to_pirna_count, read_to_pirnas, filter_stats
 
 def process_file(map_file, ref_file, output_prefix, verbose=False):
@@ -697,15 +693,15 @@ def process_file(map_file, ref_file, output_prefix, verbose=False):
     """
     sample_name = extract_sample_name(map_file)
     if verbose:
-        print(f"处理样本 {sample_name}: {map_file}")
+        print(f"Processing sample {sample_name}: {map_file}")
     
     # 使用优化版本的解析函数
     read_info, read_to_pirna_count, read_to_pirnas, filter_stats = parse_map_file_optimized(map_file, ref_file)
     
     if verbose:
         total_reads, filtered_reads = filter_stats
-        print(f"  在{sample_name}中找到{len(read_info)}个唯一reads")
-        print(f"  过滤了{filtered_reads}/{total_reads}个起始位置>9的reads（调整后>6）")
+        print(f"  Found {len(read_info)} unique reads in {sample_name}")
+        print(f"  Filtered {filtered_reads}/{total_reads} reads with start position > 9 (adjusted > 6)")
     
     # 分析长度分布
     df_length = analyze_length_distribution(read_info, read_to_pirna_count)
@@ -732,15 +728,15 @@ def process_file(map_file, ref_file, output_prefix, verbose=False):
     return sample_name
 
 def main():
-    # 设置命令行参数解析
-    parser = argparse.ArgumentParser(description='分析piRNA的长度分布、5\'端位移分布、3\'端相对位置分布和去重后的reads长度分布')
-    parser.add_argument('-i', '--input', nargs='+', required=True, help='输入的map文件路径，可以指定多个文件')
-    parser.add_argument('-o', '--output', required=True, help='输出目录或前缀')
-    parser.add_argument('-v', '--verbose', action='store_true', help='显示详细处理信息')
-    parser.add_argument('-p', '--prefix', default='', help='输出文件的前缀，默认为空')
-    parser.add_argument('--no-biopython', action='store_true', help='不使用Biopython库，使用传统解析方法')
-    parser.add_argument('-r', '--ref', default='/home/gyk/project/ld_pirna/data/bmo.v3.0.fa', help='参考piRNA文件路径')
-    parser.add_argument('--threads', type=int, default=0, help='并行处理的线程数，默认为0表示使用所有可用CPU核心')
+    # Configure CLI
+    parser = argparse.ArgumentParser(description="Analyze piRNA length distribution, 5' end shift, 3' end relative position, and unique reads length distribution")
+    parser.add_argument('-i', '--input', nargs='+', required=True, help='One or more input .map files')
+    parser.add_argument('-o', '--output', required=True, help='Output directory or prefix')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Show verbose processing information')
+    parser.add_argument('-p', '--prefix', default='', help='Output filename prefix (default: empty)')
+    parser.add_argument('--no-biopython', action='store_true', help='Do not use Biopython; fall back to legacy parsing')
+    parser.add_argument('-r', '--ref', default='/home/gyk/project/ld_pirna/data/bmo.v3.0.fa', help='Reference piRNA FASTA file path')
+    parser.add_argument('--threads', type=int, default=0, help='Number of worker processes (0 uses all available CPU cores)')
     
     # 解析命令行参数
     args = parser.parse_args()
@@ -761,9 +757,9 @@ def main():
         try:
             import Bio
             if verbose:
-                print(f"使用Biopython {Bio.__version__}进行序列分析")
+                print(f"Using Biopython {Bio.__version__} for sequence analysis")
         except ImportError:
-            print("警告: 未找到Biopython库，将使用传统解析方法")
+            print("Warning: Biopython not found; using legacy parsing")
             use_biopython = False
     
     # 如果输出目录不存在，则创建
@@ -771,7 +767,7 @@ def main():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    print(f"使用 {threads} 个CPU核心进行处理")
+    print(f"Using {threads} CPU core(s) for processing")
     
     # 处理多个样本
     all_data = {}
@@ -780,7 +776,7 @@ def main():
     
     # 使用多进程并行处理文件
     if len(map_files) > 1 and threads > 1:
-        print(f"并行处理 {len(map_files)} 个文件...")
+        print(f"Processing {len(map_files)} files in parallel...")
         # 创建进程池
         pool = mp.Pool(min(threads, len(map_files)))
         

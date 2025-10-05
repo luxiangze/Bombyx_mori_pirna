@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 
-# 绘制piRNA表达散点图脚本
-# 功能：
-# 1. 计算各个piRNA的TPM值
-# 2. 绘制散点图，横坐标为对照组，纵坐标为实验组
-# 3. 根据p值和logFC设置点的颜色
+# Script to plot piRNA expression scatterplots
+# Features:
+# 1. Compute TPM for each piRNA
+# 2. Scatterplot: x = control, y = treatment
+# 3. Color points by p-value/FDR and logFC
 
-# 检查并安装所需的R包
+# Check and install required R packages
 required_packages <- c("ggplot2", "dplyr", "optparse", "viridis", "scales")
 for (pkg in required_packages) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
@@ -14,7 +14,7 @@ for (pkg in required_packages) {
   }
 }
 
-# 加载所需的R包
+# Load required packages
 suppressPackageStartupMessages({
   library(ggplot2)
   library(dplyr)
@@ -23,92 +23,92 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-# 定义命令行参数
+# Define CLI options
 option_list <- list(
   make_option(c("-d", "--data_dir"), type = "character", default = NULL,
-              help = "包含edgeR结果文件的目录路径"),
+              help = "Directory containing edgeR result files"),
   make_option(c("-o", "--output_dir"), type = "character", default = NULL,
-              help = "输出图像的目录路径"),
+              help = "Output directory for figures"),
   make_option(c("-p", "--p_value_cutoff"), type = "numeric", default = 0.01,
-              help = "P值或FDR显著性阈值，默认为0.01"),
+              help = "Significance cutoff for P-value/FDR [default: %default]"),
   make_option(c("--use_fdr"), action = "store_true", default = FALSE,
-              help = "使用FDR而非P值作为显著性判断标准"),
+              help = "Use FDR instead of P-value for significance"),
   make_option(c("--min_length"), type = "numeric", default = 0,
-              help = "序列最小长度过滤，默认为0（不过滤）"),
+              help = "Minimum sequence length filter [default: %default]"),
   make_option(c("--max_length"), type = "numeric", default = 1000,
-              help = "序列最大长度过滤，默认为1000"),
+              help = "Maximum sequence length filter [default: %default]"),
   make_option(c("--pdf"), action = "store_true", default = FALSE,
-              help = "输出PDF格式的图像，默认为PNG格式")
+              help = "Output PDF instead of PNG")
 )
 
-# 解析命令行参数
+# Parse CLI options
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
 
-# 检查必需的参数
+# Validate required arguments
 if (is.null(opt$data_dir)) {
-  stop("请提供数据目录路径 (-d 或 --data_dir)")
+  stop("Please provide data directory path (-d or --data_dir)")
 }
 
-# 如果未指定输出目录，则使用当前目录
+# If output_dir not provided, use current working directory
 if (is.null(opt$output_dir)) {
   opt$output_dir <- getwd()
-  message(paste("未指定输出目录，将使用当前目录:", opt$output_dir))
+  message(paste("No output_dir provided; using current directory:", opt$output_dir))
 }
 
-# 确保输出目录存在
+# Ensure output directory exists
 dir.create(opt$output_dir, showWarnings = FALSE, recursive = TRUE)
 
-# 计算TPM值的函数
+# Function: compute TPM values
 calculate_tpm <- function(counts) {
-  # 确保counts是数值向量
+  # Ensure numeric vector
   counts <- as.numeric(counts)
   
-  # 计算每百万reads的比例因子
+  # Scaling factor per million reads
   scaling_factor <- sum(counts) / 1e6
   
-  # 避免除以零
+  # Avoid division by zero
   if (scaling_factor == 0) {
     scaling_factor <- 1
   }
   
-  # 计算TPM
+  # Compute TPM
   tpm <- counts / scaling_factor
   
   return(tpm)
 }
 
-# 处理文件并绘制散点图
+# Process one file and create scatterplot
 process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FALSE, use_fdr = FALSE, min_length = 0, max_length = 1000) {
-  # 读取数据
-  message(paste("处理文件:", basename(file_path)))
+  # Read data
+  message(paste("Processing file:", basename(file_path)))
   data <- read.csv(file_path, row.names = 1, check.names = FALSE)
   
-  # 计算序列长度并过滤
+  # Compute sequence lengths and filter
   seq_lengths <- nchar(rownames(data))
-  message(paste("过滤前序列数量:", nrow(data)))
+  message(paste("Sequences before filter:", nrow(data)))
   data_filtered <- data[seq_lengths >= min_length & seq_lengths <= max_length, ]
-  message(paste("过滤后序列数量:", nrow(data_filtered)))
+  message(paste("Sequences after filter:", nrow(data_filtered)))
   
-  # 如果过滤后没有序列，返回错误
+  # If nothing remains after filtering, error out
   if (nrow(data_filtered) == 0) {
-    stop("过滤后没有序列符合长度要求")
+    stop("No sequences remain after length filtering")
   }
   
-  # 使用过滤后的数据
+  # Use filtered data
   data <- data_filtered
   
-  # 提取样本名称
+  # Extract sample names
   file_name <- basename(file_path)
   sample_names <- strsplit(gsub("_edger_results_with_counts.csv", "", file_name), "_vs_")[[1]]
   control_name <- sample_names[1]
   treatment_name <- sample_names[2]
   
-  # 计算TPM值
+  # Compute TPM
   control_tpm <- calculate_tpm(data$control)
   treatment_tpm <- calculate_tpm(data$treatment)
   
-  # 创建包含TPM值的数据框
+  # Build plotting data
   plot_data <- data.frame(
     piRNA = rownames(data),
     control_tpm = control_tpm,
@@ -118,7 +118,7 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
     FDR = data$FDR
   )
   
-  # 根据用户选择使用P值或FDR作为显著性判断标准
+  # Choose P-value or FDR for significance
   if (use_fdr) {
     significance_value <- plot_data$FDR
     significance_type <- "FDR"
@@ -127,34 +127,34 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
     significance_type <- "P-value"
   }
   
-  # 添加颜色分类
+  # Color categorization
   plot_data$color_category <- ifelse(significance_value <= p_value_cutoff, 
                                      ifelse(plot_data$logFC > 0, "Up", 
                                             ifelse(plot_data$logFC < 0, "Down", "Neutral")),
                                      "NonSig")
   
-  # 为了更好的可视化，对TPM值进行log10转换（添加小值避免log(0)）
+  # log10-transform TPM (add small constant to avoid log(0))
   plot_data$log10_control_tpm <- log10(plot_data$control_tpm + 1)
   plot_data$log10_treatment_tpm <- log10(plot_data$treatment_tpm + 1)
   
-  # 限制logFC范围为[-6, 6]
+  # Limit logFC to [-6, 6]
   plot_data$logFC_limited <- pmax(pmin(plot_data$logFC, 6), -6)
   
-  # 计算上调和下调的点数
+  # Count up- and down-regulated points
   up_count <- sum(plot_data$color_category == "Up")
   down_count <- sum(plot_data$color_category == "Down")
   
-  # 创建散点图
+  # Build scatter plot
   p <- ggplot(plot_data, aes(x = log10_control_tpm, y = log10_treatment_tpm)) +
-    # 先绘制非显著性点（灰色）
+    # Draw non-significant points first (gray)
     geom_point(data = subset(plot_data, color_category == "NonSig"), 
                color = "grey80", alpha = 0.4, size = 1) +
-    # 再绘制显著性点（按logFC着色）
+    # Then draw significant points (colored by logFC)
     geom_point(data = subset(plot_data, color_category != "NonSig"), 
                aes(color = logFC_limited), alpha = 0.4, size = 1.2) +
-    # 添加对角线
+    # Add diagonal reference line
     geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey50") +
-    # 设置颜色映射，简化为蓝白红
+    # Color scale: blue-white-red
     scale_color_gradient2(
       low = "blue",
       mid = "white",
@@ -165,14 +165,14 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
       breaks = seq(-6, 6, by = 2),
       labels = seq(-6, 6, by = 2)
     ) +
-    # 设置坐标轴标签
+    # Axis labels
     labs(
       x = paste("log10(TPM) -", control_name),
       y = paste("log10(TPM) -", treatment_name),
       title = paste(treatment_name, "vs", control_name, "piRNA Expression"),
       subtitle = paste(significance_type, "cutoff:", p_value_cutoff)
     ) +
-    # 添加上调和下调点的数量标注
+    # Add annotations for counts
     annotate("text", x = min(plot_data$log10_control_tpm, na.rm = TRUE) + 1, 
              y = max(plot_data$log10_treatment_tpm, na.rm = TRUE) - 1, 
              label = paste("Up: n =", up_count), 
@@ -181,7 +181,7 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
              y = min(plot_data$log10_treatment_tpm, na.rm = TRUE) + 1, 
              label = paste("Down: n =", down_count), 
              color = "blue", size = 4, hjust = 1) +
-    # 设置主题
+    # Theme
     theme_minimal() +
     theme(
       panel.grid.minor = element_blank(),
@@ -192,8 +192,8 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
       axis.text = element_text(size = 10)
     )
   
-  # 保存图像
-  # 构建文件名，包含长度过滤信息
+  # Save figure
+  # Build filename (include length filter info)
   if (min_length > 0 || max_length < 1000) {
     length_suffix <- paste0("_len", min_length, "-", max_length)
   } else {
@@ -211,32 +211,32 @@ process_file <- function(file_path, output_dir, p_value_cutoff, output_pdf = FAL
     ggsave(output_file, p, width = 8, height = 7, units = "in", dpi = 300)
   }
   
-  message(paste("图像已保存至:", output_file))
+  message(paste("Saved:", output_file))
   
   # 返回处理的数据
   return(list(plot = p, data = plot_data))
 }
 
-# 主函数
+# Main
 main <- function() {
-  # 获取数据目录中所有的edgeR结果文件
+  # List edgeR result files
   data_files <- list.files(opt$data_dir, 
                           pattern = "*_edger_results_with_counts.csv$", 
                           full.names = TRUE, 
                           recursive = FALSE)
   
   if (length(data_files) == 0) {
-    stop(paste("在目录中未找到edgeR结果文件:", opt$data_dir))
+    stop(paste("No edgeR result files found in directory:", opt$data_dir))
   }
   
-  message(paste("找到", length(data_files), "个文件进行处理"))
+  message(paste("Found", length(data_files), "files to process"))
   
   # 处理每个文件
   results <- lapply(data_files, function(file) {
     tryCatch({
       process_file(file, opt$output_dir, opt$p_value_cutoff, opt$pdf, opt$use_fdr, opt$min_length, opt$max_length)
     }, error = function(e) {
-      message(paste("处理文件时出错:", basename(file), "- 错误:", e$message))
+      message(paste("Error processing file:", basename(file), "- Error:", e$message))
       NULL
     })
   })
@@ -245,9 +245,9 @@ main <- function() {
   results <- results[!sapply(results, is.null)]
   
   if (length(results) > 0) {
-    message(paste("成功处理了", length(results), "个文件"))
+    message(paste("Successfully processed", length(results), "files"))
   } else {
-    message("没有成功处理任何文件")
+    message("No files were successfully processed")
   }
 }
 
