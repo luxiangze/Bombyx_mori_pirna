@@ -1,0 +1,3 @@
+sample,fastq_1,fastq_2,bam
+RNPS1,,,../../work/trasposon_analysis/STAR/RNPS1/Aligned.out.bam
+control,../../data/bm_mRNA_clean_data/control_R1.clean.fastq.gz,../../data/bm_mRNA_clean_data/control_R2.clean.fastq.gz,
