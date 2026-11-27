@@ -49,6 +49,13 @@ work/**
 tmp/
 temp/
 workflow/*
+!workflow/TEcount_workflow/
+workflow/TEcount_workflow/*
+!workflow/TEcount_workflow/main.nf
+!workflow/TEcount_workflow/nextflow.config
+!workflow/TEcount_workflow/samplesheet.example.csv
+!workflow/TEcount_workflow/README.md
+!workflow/TEcount_workflow/README.zh-CN.md
 .history
 .vscode
 
