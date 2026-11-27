@@ -258,3 +258,9 @@ Rscript scripts/transposon_analysis/te_differential_analysis.R \
 # 或不带参数运行，使用脚本中的默认路径
 # Rscript scripts/transposon_analysis/te_differential_analysis.R
 ```
+
+## RNA-seq analysis
+
+```bash
+nextflow run nf-core/rnaseq -r 3.21.0 -name "control_RNA-seq9" -profile "docker" -resume -params-file "/home/gyk/project/ld_pirna/workflow/RNA-seq_workflow/nf-params.json"
+```
