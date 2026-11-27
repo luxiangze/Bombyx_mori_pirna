@@ -1,5 +1,5 @@
 """
-piRNA 分析包 - 用于分析 piRNA 的长度分布、5'端位移分布和3'端相对位置分布
+piRNA analysis package - analyze piRNA length distribution, 5' end shift, and 3' end relative position.
 """
 
 __version__ = '1.0.0'

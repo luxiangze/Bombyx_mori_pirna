@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
 """
-数据分析模块 - 负责对解析后的数据进行各种分析
+Data analysis module - performs various analyses on parsed data.
 """
 
 import pandas as pd
 from collections import defaultdict
 
 def analyze_length_distribution(read_info, read_to_pirna_count):
-    """分析piRNA长度分布"""
-    # 存储每个长度的总计数
+    """Analyze piRNA length distribution"""
+    # Total normalized count per length
     length_counts = defaultdict(int)
     
-    # 对每条读取序列进行处理
+    # Iterate over reads
     for read_key, (count, length) in read_info.items():
-        # 获取该读取序列比对到的参考piRNA数量
+        # Number of reference piRNAs this read maps to
         pirna_count = read_to_pirna_count[read_key]
-        # 归一化权重：读取序列计数 / 比对到的参考piRNA数量
+        # Normalized weight: read count / number of mapped reference piRNAs
         normalized_weight = count / pirna_count
         
-        # 更新长度分布
+        # Update length distribution
         length_counts[length] += normalized_weight
     
-    # 转换为DataFrame
+    # Convert to DataFrame
     lengths = sorted(length_counts.keys())
-    counts = [length_counts[l] for l in lengths]
+    counts = [length_counts[length_val] for length_val in lengths]
     
     df_length = pd.DataFrame({
         'Length': lengths,
@@ -33,33 +33,33 @@ def analyze_length_distribution(read_info, read_to_pirna_count):
     return df_length
 
 def analyze_5prime_shift(read_info, read_to_pirna_count, read_to_pirnas):
-    """分析5'端位移分布
+    """Analyze 5' end shift distribution.
     
-    在seqmap格式中，trans_coord表示比对起始位置（从1开始）
+    In seqmap format, trans_coord is the alignment start position (1-based).
     """
-    # 存储每个位移值的归一化计数
+    # Normalized counts per shift value
     shift_counts = defaultdict(float)
     
-    # 对每条读取序列进行处理
+    # Iterate over reads
     for read_key, (count, read_length) in read_info.items():
-        # 获取该读取序列比对到的参考piRNA数量
+        # Number of reference piRNAs this read maps to
         pirna_count = read_to_pirna_count[read_key]
-        # 归一化权重：读取序列计数 / 比对到的参考piRNA数量
+        # Normalized weight: read count / number of mapped reference piRNAs
         normalized_weight = count / pirna_count
         
-        # 更新每个位移值的归一化计数
+        # Update normalized counts per shift value
         for pirna_id, start_pos in read_to_pirnas[read_key]:
             shift = start_pos
             shift_counts[shift] += normalized_weight
     
-    # 转换为DataFrame
+    # Convert to DataFrame
     shifts = sorted(shift_counts.keys())
     counts = [shift_counts[s] for s in shifts]
     
-    # 计算总计数
+    # Total
     total_count = sum(counts)
     
-    # 计算百分比
+    # Percentage
     percentages = [count / total_count * 100 for count in counts] if total_count > 0 else [0] * len(counts)
     
     df_shift = pd.DataFrame({
@@ -71,32 +71,31 @@ def analyze_5prime_shift(read_info, read_to_pirna_count, read_to_pirnas):
     return df_shift
 
 def analyze_3prime_position(read_info, read_to_pirna_count, read_to_pirnas):
-    """分析3'端相对位置分布"""
-    # 存储每个3'端相对位置的归一化计数
+    """Analyze 3' end relative position distribution"""
+    # Normalized counts per 3' relative position
     position_counts = defaultdict(float)
     
-    # 对每条读取序列进行处理
+    # Iterate over reads
     for read_key, (count, read_length) in read_info.items():
-        # 获取该读取序列比对到的参考piRNA数量
+        # Number of reference piRNAs this read maps to
         pirna_count = read_to_pirna_count[read_key]
-        # 归一化权重：读取序列计数 / 比对到的参考piRNA数量
+        # Normalized weight: read count / number of mapped reference piRNAs
         normalized_weight = count / pirna_count
         
-        # 更新每个3'端相对位置的归一化计数
+        # Update counts per 3' relative position
         for pirna_id, start_pos in read_to_pirnas[read_key]:
-            # 计算3'端位置：起始位置 + 读取长度
-            # 在seqmap格式中，trans_coord已经是从1开始的位置
+            # Compute 3' end: start position + read length (seqmap start is 1-based)
             end_pos = start_pos + read_length
             position_counts[end_pos] += normalized_weight
     
-    # 转换为DataFrame
+    # Convert to DataFrame
     positions = sorted(position_counts.keys())
     counts = [position_counts[p] for p in positions]
     
-    # 计算总计数
+    # Total
     total_count = sum(counts)
     
-    # 计算百分比
+    # Percentage
     percentages = [count / total_count * 100 for count in counts] if total_count > 0 else [0] * len(counts)
     
     df_position = pd.DataFrame({
@@ -108,15 +107,15 @@ def analyze_3prime_position(read_info, read_to_pirna_count, read_to_pirnas):
     return df_position
 
 def analyze_unique_reads_length(read_info):
-    """分析去重后的reads长度分布"""
-    # 使用pandas的Series更高效地处理长度计数
+    """Analyze unique reads length distribution"""
+    # Use pandas Series for efficient length counting
     lengths = [length for _, (_, length) in read_info.items()]
     length_series = pd.Series(lengths)
     
-    # 计算每个长度的唯一序列数量
+    # Count unique sequences per length
     unique_length_counts = length_series.value_counts().sort_index()
     
-    # 转换为DataFrame
+    # Convert to DataFrame
     df_unique_length = pd.DataFrame({
         'Length': unique_length_counts.index,
         'UniqueCount': unique_length_counts.values
@@ -126,17 +125,17 @@ def analyze_unique_reads_length(read_info):
 
 def analyze_base_composition_by_position(read_info, read_to_pirna_count, read_to_pirnas, base_range=(-2, 46)):
     """
-    统计每个相对位置的碱基分布百分比。
-    - base_range: (start, end)，统计的相对位置范围（包含端点）
-    返回：
-      碱基分布DataFrame（行：相对位置，列：A/T/C/G/N等百分比）
+    Compute base composition percentage at each relative position.
+    - base_range: (start, end), inclusive range of relative positions.
+    Returns:
+      DataFrame of base distribution (rows: relative positions; columns: A/T/C/G/N percentages)
     """
     from collections import Counter
     base_pos_dict = {pos: Counter() for pos in range(base_range[0], base_range[1]+1)}
     base_total = {pos: 0 for pos in range(base_range[0], base_range[1]+1)}
     base_types = set()
 
-    # 统计每个位点的碱基分布
+    # Accumulate base distribution per position
     for read_key, (count, read_length) in read_info.items():
         pirna_count = read_to_pirna_count[read_key]
         normalized_weight = count / pirna_count if pirna_count > 0 else 0
@@ -149,7 +148,7 @@ def analyze_base_composition_by_position(read_info, read_to_pirna_count, read_to
                 base_total[rel_pos] += normalized_weight
                 base_types.add(base)
 
-    # 生成碱基分布百分比DataFrame
+    # Build percentage DataFrame
     base_types = sorted(list(base_types))
     base_dist_rows = []
     for rel_pos in range(base_range[0], base_range[1]+1):
